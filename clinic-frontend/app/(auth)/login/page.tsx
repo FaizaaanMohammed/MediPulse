@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
   Container,
   Typography,
@@ -20,17 +20,267 @@ import {
   ArrowForward,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState('clinic_admin');
+
+  // Exact Query Param Cleaner
+  const parseRole = (param: string | null) => {
+    if (!param) return 'clinic-admin';
+    // Remove space/encoding issues & convert underscore to hyphen
+    const clean = decodeURIComponent(param).trim().toLowerCase().replace('_', '-').replace(/\s+/g, '-');
+    if (['super-admin', 'clinic-admin', 'doctor', 'patient'].includes(clean)) {
+      return clean;
+    }
+    return 'clinic-admin';
+  };
+
+  const [role, setRole] = useState(() => parseRole(searchParams.get('role')));
   const [formData, setFormData] = useState({ email: '', password: '' });
+
+  // Sync state whenever URL query params change
+  useEffect(() => {
+    const currentParam = searchParams.get('role');
+    if (currentParam) {
+      setRole(parseRole(currentParam));
+    }
+  }, [searchParams]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Logging in:', { role, ...formData });
+    console.log('Logging in with:', { role, ...formData });
+
+    // Routing mapped to corresponding dashboard
+    switch (role) {
+      case 'super-admin':
+        router.push('/super-admin/dashboard');
+        break;
+      case 'clinic-admin':
+        router.push('/clinic-admin/dashboard');
+        break;
+      case 'doctor':
+        router.push('/doctor/dashboard');
+        break;
+      case 'patient':
+        router.push('/patient/search-doctors');
+        break;
+      default:
+        router.push('/');
+    }
   };
 
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        borderRadius: '24px',
+        bgcolor: 'rgba(15, 23, 42, 0.85)',
+        backdropFilter: 'blur(20px)',
+        border: '1px solid rgba(255, 255, 255, 0.15)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Top Accent Bar */}
+      <Box sx={{ height: 4, background: 'linear-gradient(90deg, #006D77 0%, #83C5BE 100%)' }} />
+
+      <CardContent sx={{ p: { xs: 3.5, sm: 4 } }}>
+        {/* Header */}
+        <Box textAlign="center" mb={3}>
+          <Typography
+            component={Link}
+            href="/"
+            variant="h5"
+            sx={{
+              fontWeight: 900,
+              fontSize: '1.65rem',
+              color: '#FFFFFF',
+              textDecoration: 'none',
+              letterSpacing: '-0.5px',
+              display: 'inline-block',
+              mb: 0.5,
+            }}
+          >
+            Medi<span style={{ color: '#83C5BE' }}>Pulse</span>
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#CBD5E1', fontSize: '0.875rem', mb: '20px' }}>
+            Sign in to access your dashboard
+          </Typography>
+        </Box>
+
+        <Box component="form" onSubmit={handleSubmit}>
+          <Stack spacing={2.5}>
+            {/* Custom Select with matched values */}
+            <Box display="flex" flexDirection="column" gap={0.8}>
+              <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
+                Select Access Role
+              </Typography>
+              <Box
+                component="select"
+                value={role}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRole(e.target.value)}
+                sx={{
+                  width: '100%',
+                  height: '46px',
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(255, 255, 255, 0.06)',
+                  color: '#FFFFFF',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  px: 1.5,
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  outline: 'none',
+                  cursor: 'pointer',
+                  '& option': {
+                    bgcolor: '#0F172A',
+                    color: '#FFFFFF',
+                    px: 2,
+                  },
+                  '&:focus': {
+                    borderColor: '#83C5BE',
+                  },
+                }}
+              >
+                <option value="super-admin">Super Admin Portal</option>
+                <option value="clinic-admin">Clinic Admin Portal</option>
+                <option value="doctor">Doctor Portal</option>
+                <option value="patient">Patient Portal</option>
+              </Box>
+            </Box>
+
+            {/* Email Address */}
+            <Box display="flex" flexDirection="column" gap={0.8}>
+              <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
+                Email Address
+              </Typography>
+              <TextField
+                fullWidth
+                required
+                type="email"
+                placeholder="name@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailOutlined sx={{ color: '#83C5BE', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: '#FFFFFF',
+                    borderRadius: '12px',
+                    bgcolor: 'rgba(255, 255, 255, 0.06)',
+                    height: '46px',
+                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+                    '&:hover fieldset': { borderColor: '#83C5BE' },
+                    '&.Mui-focused fieldset': { borderColor: '#83C5BE' },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Password */}
+            <Box display="flex" flexDirection="column" gap={0.8}>
+              <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
+                Password
+              </Typography>
+              <TextField
+                fullWidth
+                required
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlined sx={{ color: '#83C5BE', fontSize: 20 }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: '#CBD5E1' }}>
+                        {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: '#FFFFFF',
+                    borderRadius: '12px',
+                    bgcolor: 'rgba(255, 255, 255, 0.06)',
+                    height: '46px',
+                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+                    '&:hover fieldset': { borderColor: '#83C5BE' },
+                    '&.Mui-focused fieldset': { borderColor: '#83C5BE' },
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Forgot Password Link */}
+            <Box display="flex" justifyContent="flex-end">
+              <Typography
+                component={Link}
+                href="/forgot-password"
+                variant="caption"
+                sx={{ color: '#83C5BE', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
+              >
+                Forgot Password?
+              </Typography>
+            </Box>
+
+            {/* Sign In Button */}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disableElevation
+              endIcon={<ArrowForward sx={{ fontSize: 18 }} />}
+              sx={{
+                bgcolor: '#006D77',
+                color: '#FFFFFF',
+                borderRadius: '12px',
+                py: 1.3,
+                textTransform: 'none',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+                boxShadow: '0 4px 20px rgba(0, 109, 119, 0.4)',
+                '&:hover': { bgcolor: '#004D54' },
+              }}
+            >
+              Sign In
+            </Button>
+          </Stack>
+        </Box>
+
+        {/* Bottom Account Switch */}
+        <Box textAlign="center" mt="25px" pt="10px" sx={{ borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}>
+          <Typography variant="body2" sx={{ color: '#CBD5E1' }}>
+            Don't have an account?{' '}
+            <Typography
+              component={Link}
+              href="/register"
+              variant="body2"
+              sx={{ color: '#83C5BE', textDecoration: 'none', fontWeight: 700, '&:hover': { textDecoration: 'underline' } }}
+            >
+              Create Account
+            </Typography>
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function LoginPage() {
   return (
     <Box
       sx={{
@@ -47,209 +297,9 @@ export default function LoginPage() {
       }}
     >
       <Container maxWidth="xs" disableGutters>
-        <Card
-          elevation={0}
-          sx={{
-            borderRadius: '24px',
-            bgcolor: 'rgba(15, 23, 42, 0.85)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Top Accent Bar */}
-          <Box sx={{ height: 4, background: 'linear-gradient(90deg, #006D77 0%, #83C5BE 100%)' }} />
-
-          <CardContent sx={{ p: { xs: 3.5, sm: 4 } }}>
-            {/* Header */}
-            <Box textAlign="center" mb={3}>
-              <Typography
-                component={Link}
-                href="/"
-                variant="h5"
-                sx={{
-                  fontWeight: 900,
-                  fontSize: '1.65rem',
-                  color: '#FFFFFF',
-                  textDecoration: 'none',
-                  letterSpacing: '-0.5px',
-                  display: 'inline-block',
-                  mb: 0.5,
-                }}
-              >
-                Medi<span style={{ color: '#83C5BE' }}>Pulse</span>
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#CBD5E1', fontSize: '0.875rem', mb: '20px' }}>
-                Sign in to access your dashboard
-              </Typography>
-            </Box>
-
-            <Box component="form" onSubmit={handleSubmit}>
-              <Stack spacing={2.5}>
-                {/* Fixed Clean Custom Dropdown */}
-                <Box display="flex" flexDirection="column" gap={0.8}>
-                  <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
-                    Select Access Role
-                  </Typography>
-                  <Box
-                    component="select"
-                    value={role}
-                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRole(e.target.value)}
-                    sx={{
-                      width: '100%',
-                      height: '46px',
-                      borderRadius: '12px',
-                      bgcolor: 'rgba(255, 255, 255, 0.06)',
-                      color: '#FFFFFF',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      px: 1,
-                      fontSize: '0.9rem',
-                      fontWeight: 600,
-                      outline: 'none',
-                      cursor: 'pointer',
-                      '& option': {
-                        bgcolor: '#0F172A',
-                        color: '#FFFFFF',
-                        px: 2,
-                      },
-                      '&:focus': {
-                        borderColor: '#83C5BE',
-                      },
-                    }}
-                  >
-                    <option value="super_admin">Super Admin Portal</option>
-                    <option value="clinic_admin">Clinic Admin Portal</option>
-                    <option value="doctor">Doctor Portal</option>
-                    <option value="patient">Patient Portal</option>
-                  </Box>
-                </Box>
-
-                {/* Email Address */}
-                <Box display="flex" flexDirection="column" gap={0.8}>
-                  <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
-                    Email Address
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    required
-                    type="email"
-                    placeholder="name@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <EmailOutlined sx={{ color: '#83C5BE', fontSize: 20 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        color: '#FFFFFF',
-                        borderRadius: '12px',
-                        bgcolor: 'rgba(255, 255, 255, 0.06)',
-                        height: '46px',
-                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#83C5BE' },
-                        '&.Mui-focused fieldset': { borderColor: '#83C5BE' },
-                      },
-                    }}
-                  />
-                </Box>
-
-                {/* Password */}
-                <Box display="flex" flexDirection="column" gap={0.8}>
-                  <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
-                    Password
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    required
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <LockOutlined sx={{ color: '#83C5BE', fontSize: 20 }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton onClick={() => setShowPassword(!showPassword)} edge="end" sx={{ color: '#CBD5E1' }}>
-                            {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        color: '#FFFFFF',
-                        borderRadius: '12px',
-                        bgcolor: 'rgba(255, 255, 255, 0.06)',
-                        height: '46px',
-                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                        '&:hover fieldset': { borderColor: '#83C5BE' },
-                        '&.Mui-focused fieldset': { borderColor: '#83C5BE' },
-                      },
-                    }}
-                  />
-                </Box>
-
-                {/* Forgot Password Link */}
-                <Box display="flex" justifyContent="flex-end">
-                  <Typography
-                    component={Link}
-                    href="/forgot-password"
-                    variant="caption"
-                    sx={{ color: '#83C5BE', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                  >
-                    Forgot Password?
-                  </Typography>
-                </Box>
-
-                {/* Sign In Button */}
-                <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  disableElevation
-                  endIcon={<ArrowForward sx={{ fontSize: 18 }} />}
-                  sx={{
-                    bgcolor: '#006D77',
-                    color: '#FFFFFF',
-                    borderRadius: '12px',
-                    py: 1.3,
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    boxShadow: '0 4px 20px rgba(0, 109, 119, 0.4)',
-                    '&:hover': { bgcolor: '#004D54' },
-                  }}
-                >
-                  Sign In
-                </Button>
-              </Stack>
-            </Box>
-
-            {/* Bottom Account Switch */}
-            <Box textAlign="center" mt={3.5} pt={2.5} sx={{ borderTop: '1px solid rgba(255, 255, 255, 0.12)',textAlign:"center",mt:"25px",pt:"10px" }}>
-              <Typography variant="body2" sx={{ color: '#CBD5E1' }}>
-                Don't have an account?{' '}
-                <Typography
-                  component={Link}
-                  href="/register"
-                  variant="body2"
-                  sx={{ color: '#83C5BE', textDecoration: 'none', fontWeight: 700, '&:hover': { textDecoration: 'underline' } }}
-                >
-                  Create Account
-                </Typography>
-              </Typography>
-            </Box>
-          </CardContent>
-        </Card>
+        <Suspense fallback={<Typography sx={{ color: '#FFF' }}>Loading...</Typography>}>
+          <LoginForm />
+        </Suspense>
       </Container>
     </Box>
   );

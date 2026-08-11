@@ -1,19 +1,39 @@
 'use client';
-import React from 'react';
-import { Box, Container, Typography, Button, Stack, Avatar, Chip, Paper } from '@mui/material';
-import { ArrowForwardOutlined, FavoriteOutlined } from '@mui/icons-material';
+import React, { useState } from 'react';
+import { Box, Container, Typography, Button, Stack, Avatar, Chip, Paper, Menu, MenuItem, ListItemIcon, Divider } from '@mui/material';
+import { ArrowForwardOutlined, FavoriteOutlined, LogoutOutlined, ReceiptLongOutlined } from '@mui/icons-material';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  // Profile Menu State
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const openMenu = Boolean(anchorEl);
+
+  const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleCloseMenu();
+    // Tumhara authentication clearing logic / token remove logic yahan aayega
+    alert('Logged out successfully!');
+    router.push('/login');
+  };
 
   // Updated 4 Clean Navigation Items
   const navs = [
     { text: 'Home', href: '/patient/search-doctors' },
     { text: 'Our Doctors', href: '/patient/search-doctors/all' },
     { text: 'My Bookings', href: '/patient/dashboard' },
-    { text: 'Contact', href: '#contact-desk' },
+    { text: 'Contact', href: '/patient/search-doctors#contact-desk' },
   ];
 
   return (
@@ -31,7 +51,7 @@ export default function Navbar() {
         <Paper
           elevation={0}
           sx={{
-            p: "20px",
+            p: '16px',
             px: 3,
             bgcolor: '#FFFFFF',
             borderRadius: '50px',
@@ -87,7 +107,21 @@ export default function Navbar() {
 
           {/* User Profile & CTA */}
           <Stack direction="row" spacing={2} alignItems="center">
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Clickable Profile Trigger */}
+            <Box
+              onClick={handleOpenMenu}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                cursor: 'pointer',
+                p: 0.5,
+                px: 1,
+                borderRadius: '50px',
+                transition: '0.2s',
+                '&:hover': { bgcolor: '#F1F5F9' },
+              }}
+            >
               <Avatar sx={{ bgcolor: '#4F46E5', width: 36, height: 36, fontSize: '0.85rem', fontWeight: 800 }}>
                 P
               </Avatar>
@@ -100,6 +134,58 @@ export default function Navbar() {
                 </Typography>
               </Box>
             </Box>
+
+            {/* Logout Popover Menu */}
+            <Menu
+              anchorEl={anchorEl}
+              open={openMenu}
+              onClose={handleCloseMenu}
+              onClick={handleCloseMenu}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              PaperProps={{
+                elevation: 0,
+                sx: {
+                  filter: 'drop-shadow(0px 10px 25px rgba(30, 27, 75, 0.12))',
+                  mt: 1.5,
+                  borderRadius: '20px',
+                  minWidth: 190,
+                  border: '1.5px solid #CBD5E1',
+                  p: 0.5,
+                },
+              }}
+            >
+              <Box sx={{ px: 2, py: 1 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1E1B4B' }}>
+                  Rahul Sharma
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#64748B' }}>
+                  PAT-1082
+                </Typography>
+              </Box>
+
+              <Divider sx={{ my: 0.5 }} />
+
+              <MenuItem onClick={() => router.push('/patient/dashboard')} sx={{ borderRadius: '12px', py: 1 }}>
+                <ListItemIcon>
+                  <ReceiptLongOutlined fontSize="small" sx={{ color: '#4F46E5' }} />
+                </ListItemIcon>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#1E1B4B' }}>
+                  My Bookings
+                </Typography>
+              </MenuItem>
+
+              <Divider sx={{ my: 0.5 }} />
+
+              <MenuItem onClick={handleLogout} sx={{ borderRadius: '12px', py: 1 }}>
+                <ListItemIcon>
+                  <LogoutOutlined fontSize="small" sx={{ color: '#DC2626' }} />
+                </ListItemIcon>
+                <Typography variant="body2" sx={{ fontWeight: 800, color: '#DC2626' }}>
+                  Logout
+                </Typography>
+              </MenuItem>
+            </Menu>
 
             <Button
               variant="contained"

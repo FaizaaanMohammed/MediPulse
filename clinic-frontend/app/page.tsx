@@ -32,7 +32,7 @@ export default function Home() {
     {
       title: 'Super Admin Portal',
       desc: 'Platform governance, SaaS subscriptions, clinic onboardings & global revenue analytics.',
-      path: '/login',
+      path: '/login?role=super-admin',
       icon: <AdminPanelSettings sx={{ fontSize: 26, color: '#83C5BE' }} />,
       badge: 'Platform',
       badgeColor: 'rgba(131, 197, 190, 0.2)',
@@ -42,7 +42,7 @@ export default function Home() {
     {
       title: 'Clinic Admin Portal',
       desc: 'Doctor schedules, real-time appointment queues, patient records & clinic earnings.',
-      path: '/clinic-admin/dashboard',
+      path: '/login?role=clinic-admin',
       icon: <LocalHospital sx={{ fontSize: 26, color: '#2DD4BF' }} />,
       badge: 'Management',
       badgeColor: 'rgba(45, 212, 191, 0.2)',
@@ -52,7 +52,7 @@ export default function Home() {
     {
       title: 'Doctor Portal',
       desc: 'Daily consultation queue, digital prescriptions, medical history & patient logs.',
-      path: '/login',
+      path: '/login?role=doctor',
       icon: <MedicalServices sx={{ fontSize: 26, color: '#FBBF24' }} />,
       badge: 'Clinical',
       badgeColor: 'rgba(251, 191, 36, 0.2)',
@@ -62,7 +62,7 @@ export default function Home() {
     {
       title: 'Patient Portal',
       desc: 'Book instant doctor slots, pay consultation fees online & submit ratings.',
-      path: '/doctors/1/book',
+      path: '/login?role=patient',
       icon: <Person sx={{ fontSize: 26, color: '#60A5FA' }} />,
       badge: 'Self Service',
       badgeColor: 'rgba(96, 165, 250, 0.2)',
@@ -152,8 +152,6 @@ export default function Home() {
         <Container maxWidth={false} sx={{ maxWidth: '1350px' }}>
           {/* Centered Top Content Section */}
           <Box textAlign="center" maxWidth="820px" mx="auto">
-            
-
             <Typography
               variant="h2"
               sx={{
@@ -162,7 +160,7 @@ export default function Home() {
                 lineHeight: 1.15,
                 mb: 2.5,
                 letterSpacing: '-1px',
-                 textAlign:"center"
+                textAlign: 'center',
               }}
             >
               Smart Clinic & <span style={{ color: '#83C5BE' }}>Healthcare Platform</span>
@@ -175,20 +173,19 @@ export default function Home() {
                 mb: 4,
                 fontSize: { xs: '0.95rem', md: '1.05rem' },
                 lineHeight: 1.6,
-                maxWidth: "620px",
+                maxWidth: '620px',
                 mx: 'auto',
-                textAlign:"center"
+                textAlign: 'center',
               }}
             >
               Streamline clinic operations, real-time doctor slot booking, online payments, and patient feedback in one unified portal.
             </Typography>
 
             {/* Side-by-Side Checkmark Inline Strip */}
-            <Stack direction="row" spacing={3}  flexWrap="wrap" useFlexGap sx={{ mb: '40px',justifyContent:"center",display:"flex",mt:"20px" }}>
+            <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap sx={{ mb: '40px', justifyContent: 'center', display: 'flex', mt: '20px' }}>
               {['Multi-Tenant SaaS', 'Real-Time Slots', 'Online Payments', 'Automated Alerts'].map((item) => (
-                <Box key={item} display="flex" alignItems="center" sx={{display:"flex",alignItems:"center"}} gap={1}>
-                  <CheckCircle sx={{ fontSize: 18, color: '#83C5BE',mr:"4px"
-                   }} />
+                <Box key={item} display="flex" alignItems="center" sx={{ display: 'flex', alignItems: 'center' }} gap={1}>
+                  <CheckCircle sx={{ fontSize: 18, color: '#83C5BE', mr: '4px' }} />
                   <Typography variant="body2" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.85rem' }}>
                     {item}
                   </Typography>
@@ -228,12 +225,10 @@ export default function Home() {
                 <SearchIcon fontSize="small" />
               </IconButton>
             </Paper>
-
-            
           </Box>
 
           {/* Integrated Workspace Portals Grid */}
-          <Box sx={{marginTop:"80px"}}>
+          <Box sx={{ marginTop: '80px' }}>
             <Box textAlign="center" mb={4} sx={{ marginBottom: '40px' }}>
               <Chip
                 label="WORKSPACE ACCESS"
