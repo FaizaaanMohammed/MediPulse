@@ -15,20 +15,27 @@ import {
 import {
   EmailOutlined,
   LockOutlined,
+  PersonOutlined,
+  PhoneOutlined,
   Visibility,
   VisibilityOff,
   ArrowForward,
 } from '@mui/icons-material';
 import Link from 'next/link';
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState('clinic_admin');
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [role, setRole] = useState('patient');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Logging in:', { role, ...formData });
+    console.log('Registering user:', { role, ...formData });
   };
 
   return (
@@ -59,7 +66,7 @@ export default function LoginPage() {
           }}
         >
           {/* Top Accent Bar */}
-          <Box sx={{ height: 4, background: 'linear-gradient(90deg, #006D77 0%, #83C5BE 100%)' }} />
+          <Box sx={{ height: 4, background: 'linear-gradient(90deg, #83C5BE 0%, #006D77 100%)' }} />
 
           <CardContent sx={{ p: { xs: 3.5, sm: 4 } }}>
             {/* Header */}
@@ -80,14 +87,14 @@ export default function LoginPage() {
               >
                 Medi<span style={{ color: '#83C5BE' }}>Pulse</span>
               </Typography>
-              <Typography variant="body2" sx={{ color: '#CBD5E1', fontSize: '0.875rem', mb: '20px' }}>
-                Sign in to access your dashboard
+              <Typography variant="body2" sx={{ color: '#CBD5E1', fontSize: '0.875rem',mb:"20px" }}>
+                Create your account to get started
               </Typography>
             </Box>
 
             <Box component="form" onSubmit={handleSubmit}>
-              <Stack spacing={2.5}>
-                {/* Fixed Clean Custom Dropdown */}
+              <Stack spacing={2}>
+                {/* 4 Portals Dropdown */}
                 <Box display="flex" flexDirection="column" gap={0.8}>
                   <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
                     Select Access Role
@@ -103,7 +110,7 @@ export default function LoginPage() {
                       bgcolor: 'rgba(255, 255, 255, 0.06)',
                       color: '#FFFFFF',
                       border: '1px solid rgba(255, 255, 255, 0.2)',
-                      px: 1,
+                      px: 2,
                       fontSize: '0.9rem',
                       fontWeight: 600,
                       outline: 'none',
@@ -111,18 +118,50 @@ export default function LoginPage() {
                       '& option': {
                         bgcolor: '#0F172A',
                         color: '#FFFFFF',
-                        px: 2,
+                        py: 1,
                       },
                       '&:focus': {
                         borderColor: '#83C5BE',
                       },
                     }}
                   >
-                    <option value="super_admin">Super Admin Portal</option>
-                    <option value="clinic_admin">Clinic Admin Portal</option>
-                    <option value="doctor">Doctor Portal</option>
-                    <option value="patient">Patient Portal</option>
+                    <option value="super_admin">Super Admin Account</option>
+                    <option value="clinic_admin">Clinic Admin Account</option>
+                    <option value="doctor">Doctor Account</option>
+                    <option value="patient">Patient Account</option>
                   </Box>
+                </Box>
+
+                {/* Full Name */}
+                <Box display="flex" flexDirection="column" gap={0.8}>
+                  <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
+                    Full Name
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    required
+                    placeholder="John Doe"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonOutlined sx={{ color: '#83C5BE', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        color: '#FFFFFF',
+                        borderRadius: '12px',
+                        bgcolor: 'rgba(255, 255, 255, 0.06)',
+                        height: '46px',
+                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+                        '&:hover fieldset': { borderColor: '#83C5BE' },
+                        '&.Mui-focused fieldset': { borderColor: '#83C5BE' },
+                      },
+                    }}
+                  />
                 </Box>
 
                 {/* Email Address */}
@@ -141,6 +180,38 @@ export default function LoginPage() {
                       startAdornment: (
                         <InputAdornment position="start">
                           <EmailOutlined sx={{ color: '#83C5BE', fontSize: 20 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        color: '#FFFFFF',
+                        borderRadius: '12px',
+                        bgcolor: 'rgba(255, 255, 255, 0.06)',
+                        height: '46px',
+                        '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+                        '&:hover fieldset': { borderColor: '#83C5BE' },
+                        '&.Mui-focused fieldset': { borderColor: '#83C5BE' },
+                      },
+                    }}
+                  />
+                </Box>
+
+                {/* Phone Number */}
+                <Box display="flex" flexDirection="column" gap={0.8}>
+                  <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, fontSize: '0.825rem' }}>
+                    Phone Number
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    required
+                    placeholder="+91 98765 43210"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneOutlined sx={{ color: '#83C5BE', fontSize: 20 }} />
                         </InputAdornment>
                       ),
                     }}
@@ -198,19 +269,7 @@ export default function LoginPage() {
                   />
                 </Box>
 
-                {/* Forgot Password Link */}
-                <Box display="flex" justifyContent="flex-end">
-                  <Typography
-                    component={Link}
-                    href="/forgot-password"
-                    variant="caption"
-                    sx={{ color: '#83C5BE', textDecoration: 'none', fontWeight: 600, '&:hover': { textDecoration: 'underline' } }}
-                  >
-                    Forgot Password?
-                  </Typography>
-                </Box>
-
-                {/* Sign In Button */}
+                {/* Submit Button */}
                 <Button
                   type="submit"
                   fullWidth
@@ -222,6 +281,7 @@ export default function LoginPage() {
                     color: '#FFFFFF',
                     borderRadius: '12px',
                     py: 1.3,
+                    mt: 1,
                     textTransform: 'none',
                     fontWeight: 700,
                     fontSize: '0.95rem',
@@ -229,22 +289,22 @@ export default function LoginPage() {
                     '&:hover': { bgcolor: '#004D54' },
                   }}
                 >
-                  Sign In
+                  Create Account
                 </Button>
               </Stack>
             </Box>
 
-            {/* Bottom Account Switch */}
-            <Box textAlign="center" mt={3.5} pt={2.5} sx={{ borderTop: '1px solid rgba(255, 255, 255, 0.12)',textAlign:"center",mt:"25px",pt:"10px" }}>
+            {/* Bottom Link */}
+            <Box textAlign="center" sx={{ textAlign: 'center', mt: '25px', pt: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.12)' }}>
               <Typography variant="body2" sx={{ color: '#CBD5E1' }}>
-                Don't have an account?{' '}
+                Already have an account?{' '}
                 <Typography
                   component={Link}
-                  href="/register"
+                  href="/login"
                   variant="body2"
                   sx={{ color: '#83C5BE', textDecoration: 'none', fontWeight: 700, '&:hover': { textDecoration: 'underline' } }}
                 >
-                  Create Account
+                  Sign In
                 </Typography>
               </Typography>
             </Box>
