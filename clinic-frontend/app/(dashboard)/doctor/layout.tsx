@@ -18,11 +18,8 @@ import {
 } from '@mui/material';
 import {
   DashboardOutlined,
-  PeopleAltOutlined,
-  CalendarTodayOutlined,
-  PersonalInjuryOutlined,
-  ReceiptLongOutlined,
-  SettingsOutlined,
+  CalendarMonthOutlined,
+  StarOutlineOutlined,
   MenuOutlined,
   LogoutOutlined,
   NotificationsNoneOutlined,
@@ -34,15 +31,12 @@ const DRAWER_WIDTH = 260;
 const HEADER_HEIGHT = 65;
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardOutlined />, href: '/clinic-admin/dashboard' },
-  { text: 'Doctors', icon: <PeopleAltOutlined />, href: '/clinic-admin/doctors' },
-  { text: 'Appointments', icon: <CalendarTodayOutlined />, href: '/clinic-admin/appointments' },
-  { text: 'Patients', icon: <PersonalInjuryOutlined />, href: '/clinic-admin/patients' },
-  { text: 'Billing & Invoices', icon: <ReceiptLongOutlined />, href: '/clinic-admin/billing' },
-  { text: 'Settings', icon: <SettingsOutlined />, href: '/clinic-admin/settings' },
+  { text: 'My OPD Queue', icon: <DashboardOutlined />, href: '/doctor/dashboard' },
+  { text: 'My Schedule', icon: <CalendarMonthOutlined />, href: '/doctor/schedule' },
+  { text: 'Ratings & Reviews', icon: <StarOutlineOutlined />, href: '/doctor/feedback' },
 ];
 
-export default function ClinicAdminLayout({ children }: { children: React.ReactNode }) {
+export default function DoctorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -50,7 +44,6 @@ export default function ClinicAdminLayout({ children }: { children: React.ReactN
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#1E293B', color: '#FFFFFF' }}>
-      {/* Brand Header */}
       <Box
         sx={{
           height: HEADER_HEIGHT,
@@ -65,10 +58,9 @@ export default function ClinicAdminLayout({ children }: { children: React.ReactN
         <Typography variant="h6" sx={{ fontWeight: 900, letterSpacing: '-0.5px', color: '#FFFFFF' }}>
           Medi<span style={{ color: '#83C5BE' }}>Pulse</span>
         </Typography>
-        <Chip label="Clinic Admin" size="small" sx={{ bgcolor: 'rgba(131, 197, 190, 0.15)', color: '#83C5BE', fontWeight: 700, fontSize: '0.65rem' }} />
+        <Chip label="Doctor" size="small" sx={{ bgcolor: 'rgba(0, 109, 119, 0.2)', color: '#83C5BE', fontWeight: 700, fontSize: '0.65rem' }} />
       </Box>
 
-      {/* Navigation Links */}
       <List sx={{ px: 2, py: 3, flexGrow: 1 }}>
         {menuItems.map((item) => {
           const isActive = pathname === item.href;
@@ -105,7 +97,6 @@ export default function ClinicAdminLayout({ children }: { children: React.ReactN
         })}
       </List>
 
-      {/* Footer / Logout */}
       <Box sx={{ p: 2, borderTop: '1px solid #334155' }}>
         <ListItemButton
           component={Link}
@@ -130,7 +121,6 @@ export default function ClinicAdminLayout({ children }: { children: React.ReactN
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0F172A' }}>
-      {/* Desktop Persistent Sidebar */}
       <Drawer
         variant="permanent"
         sx={{
@@ -148,7 +138,6 @@ export default function ClinicAdminLayout({ children }: { children: React.ReactN
         {drawerContent}
       </Drawer>
 
-      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -162,9 +151,7 @@ export default function ClinicAdminLayout({ children }: { children: React.ReactN
         {drawerContent}
       </Drawer>
 
-      {/* Main Page Area */}
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', width: { md: `calc(100% - ${DRAWER_WIDTH}px)` } }}>
-        {/* Top Header */}
         <Box
           sx={{
             height: HEADER_HEIGHT,
@@ -186,19 +173,20 @@ export default function ClinicAdminLayout({ children }: { children: React.ReactN
           </Box>
 
           <Stack direction="row" spacing={2.5} sx={{ alignItems: 'center' }}>
-            
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#FFFFFF' }}>
+              Dr. A. K. Roy Workspace
+            </Typography>
 
             <IconButton sx={{ color: '#CBD5E1', border: '1px solid #334155' }}>
               <NotificationsNoneOutlined fontSize="small" />
             </IconButton>
 
             <Avatar sx={{ bgcolor: '#006D77', width: 36, height: 36, fontSize: '0.85rem', fontWeight: 700 }}>
-              CA
+              DR
             </Avatar>
           </Stack>
         </Box>
 
-        {/* Dynamic Page Children */}
         <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 4 } }}>
           {children}
         </Box>
