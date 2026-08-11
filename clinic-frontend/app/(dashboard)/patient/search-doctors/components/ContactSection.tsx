@@ -22,6 +22,7 @@ export default function ContactSection() {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
+      id="contact-desk"
     >
       <Container maxWidth={false} sx={{ maxWidth: '1350px', px: { xs: 2, md: 4 } }}>
         <Box

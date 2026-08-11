@@ -8,10 +8,12 @@ import { usePathname } from 'next/navigation';
 export default function Navbar() {
   const pathname = usePathname();
 
+  // Updated 4 Clean Navigation Items
   const navs = [
     { text: 'Home', href: '/patient/search-doctors' },
+    { text: 'Our Doctors', href: '/patient/search-doctors/all' },
     { text: 'My Bookings', href: '/patient/dashboard' },
-    { text: 'Feedback', href: '/patient/feedback' },
+    { text: 'Contact', href: '#contact-desk' },
   ];
 
   return (
@@ -25,7 +27,7 @@ export default function Navbar() {
         width: '100%',
       }}
     >
-      <Container maxWidth={false} sx={{ maxWidth: '1350px' }}>
+      <Container maxWidth={false} sx={{ maxWidth: '1350px', px: { xs: 2, md: 4 } }}>
         <Paper
           elevation={0}
           sx={{
@@ -41,18 +43,26 @@ export default function Navbar() {
           }}
         >
           {/* Brand Logo */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            component={Link}
+            href="/patient/search-doctors"
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
+          >
             <Box sx={{ p: 0.8, bgcolor: '#4F46E5', borderRadius: '12px', color: '#FFF', display: 'flex' }}>
               <FavoriteOutlined fontSize="small" />
             </Box>
             <Typography variant="h6" sx={{ fontWeight: 900, color: '#1E1B4B', letterSpacing: '-0.5px' }}>
               Medi<span style={{ color: '#4F46E5' }}>Pulse</span>
             </Typography>
-            <Chip label="Patient Care" size="small" sx={{ bgcolor: '#EEF2FF', color: '#4F46E5', fontWeight: 800, fontSize: '0.65rem' }} />
+            <Chip
+              label="Patient Care"
+              size="small"
+              sx={{ bgcolor: '#EEF2FF', color: '#4F46E5', fontWeight: 800, fontSize: '0.65rem' }}
+            />
           </Box>
 
-          {/* Navigation Links */}
-          <Stack direction="row" spacing={4} sx={{ display: { xs: 'none', md: 'flex' } }}>
+          {/* 4 Core Navigation Links */}
+          <Stack direction="row" spacing={3.5} sx={{ display: { xs: 'none', md: 'flex' } }}>
             {navs.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -63,8 +73,9 @@ export default function Navbar() {
                   sx={{
                     color: isActive ? '#4F46E5' : '#475569',
                     fontWeight: isActive ? 800 : 600,
-                    fontSize: '0.95rem',
+                    fontSize: '0.92rem',
                     textDecoration: 'none',
+                    transition: '0.2s',
                     '&:hover': { color: '#4F46E5' },
                   }}
                 >
@@ -94,7 +105,7 @@ export default function Navbar() {
               variant="contained"
               disableElevation
               component={Link}
-              href="/patient/search-doctors"
+              href="/patient/search-doctors/all"
               endIcon={
                 <Box sx={{ p: 0.5, bgcolor: '#FFF', borderRadius: '50%', color: '#4F46E5', display: 'flex' }}>
                   <ArrowForwardOutlined sx={{ fontSize: 14 }} />
