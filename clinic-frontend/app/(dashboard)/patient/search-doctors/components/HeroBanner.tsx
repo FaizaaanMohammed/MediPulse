@@ -2,8 +2,17 @@
 import React from 'react';
 import { Box, Typography, Button, Chip, Container } from '@mui/material';
 import { ArrowForwardOutlined } from '@mui/icons-material';
+import { useRouter } from 'next/navigation';
 
 export default function HeroBanner() {
+
+
+  const router = useRouter();
+  
+  const handleClick = ()=>{
+    router.push("/patient/search-doctors/all");
+  }
+
   return (
     <Box
       sx={{
@@ -85,6 +94,7 @@ export default function HeroBanner() {
                   <ArrowForwardOutlined sx={{ fontSize: 14 }} />
                 </Box>
               }
+              onClick={handleClick}
               sx={{
                 bgcolor: '#4F46E5',
                 '&:hover': { bgcolor: '#4338CA' },
