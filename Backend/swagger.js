@@ -1,22 +1,37 @@
-const swaggerAutogen = require("swagger-autogen")({ openapi: '3.0.0' });
+const swaggerAutogen = require('swagger-autogen')({ openapi: '3.0.0' });
 
 const doc = {
   info: {
-    title: "MediPulse",
-    description: "Endpoints for both Local and Live testing",
+    title: 'MediPulse API Documentation',
+    description: 'Endpoints for both Local and Live testing',
+    version: '1.0.0',
   },
-  // Host aur schemes ki jagah servers array ka use karein
   servers: [
     {
-      url: "http://localhost:5000/api/v1",
-      description: "Local Development Server",
+      url: 'http://localhost:5000/api/v1',
+      description: 'Local Development Server',
     },
-    
+  ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Enter your JWT Bearer token below',
+      },
+    },
+  },
+  security: [
+    {
+      bearerAuth: [],
+    },
   ],
 };
 
-const outputFile = "./swagger-output.json"; // Jahan JSON save hoga
-const endpointsFiles = ["./app/routers/indexRoute.js"]; // Aapke routes files
+const outputFile = './swagger-output.json';
+const endpointsFiles = ['./app/routers/indexRoute.js'];
 
-// Isse run karne par json file create hogi
-swaggerAutogen(outputFile, endpointsFiles, doc);
+swaggerAutogen(outputFile, endpointsFiles, doc).then(() => {
+  console.log('Swagger documentation generated with Bearer Auth!');
+});
