@@ -332,6 +332,32 @@
         }
       }
     },
+    "/super-admin/revenue-reports": {
+      "get": {
+        "tags": [
+          "Super Admin"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/super-admin/export-csv": {
+      "get": {
+        "tags": [
+          "Super Admin"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
     "/clinic/add-doctor": {
       "post": {
         "tags": [

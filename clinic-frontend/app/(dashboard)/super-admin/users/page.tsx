@@ -286,7 +286,7 @@ export default function GlobalUsersPage() {
                         startIcon={u.status === 'Active' ? <BlockOutlined /> : <CheckCircleOutlined />}
                         sx={{ fontWeight: 800, textTransform: 'none', borderRadius: '8px' }}
                       >
-                        {u.status === 'Active' ? 'Block User' : 'Unblock'}
+                        {u.status === 'Active' ? 'Block' : 'Unblock'}
                       </Button>
                     </TableCell>
                   </TableRow>

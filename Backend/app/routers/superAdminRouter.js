@@ -44,10 +44,16 @@ router.get('/users', (req, res, next) => {
   superAdminController.getAllPlatformUsers(req, res, next);
 });
 
-// Existing route (Status update)
-router.patch('/users/:userId/status', (req, res, next) => {
+//  Revenue & Tier Breakdown Stats
+router.get('/revenue-reports', (req, res, next) => {
   // #swagger.tags = ['Super Admin']
-  superAdminController.toggleUserStatus(req, res, next);
+  superAdminController.getRevenueReports(req, res, next);
+});
+
+// Full Platform Audit CSV Download
+router.get('/export-csv', (req, res, next) => {
+  // #swagger.tags = ['Super Admin']
+  superAdminController.exportRevenueCSV(req, res, next);
 });
 
 module.exports = router;
