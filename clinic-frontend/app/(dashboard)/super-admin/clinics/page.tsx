@@ -98,6 +98,7 @@ export default function ClinicsManagementPage() {
   }, []);
 
   // 2. Handle Status Change (Approve / Suspend API call)
+ // Handle Status Change (Approve / Suspend API call)
   const handleStatusChange = async (id: string, newStatus: 'APPROVED' | 'SUSPENDED') => {
     try {
       setUpdatingId(id);
@@ -111,7 +112,12 @@ export default function ClinicsManagementPage() {
         setSelectedClinic((prev) => (prev ? { ...prev, status: newStatus } : null));
       }
 
-      await api.patch(`${API_ENDPOINTS.SUPER_ADMIN.UPDATE_USER_STATUS}/${id}/status`, {
+      // Endpoint execution check
+      const endpoint = typeof API_ENDPOINTS.SUPER_ADMIN.UPDATE_CLINIC_STATUS === 'function'
+        ? API_ENDPOINTS.SUPER_ADMIN.UPDATE_CLINIC_STATUS(id)
+        : `/super-admin/clinics/${id}/status`;
+
+      await api.patch(endpoint, {
         status: newStatus,
       });
 

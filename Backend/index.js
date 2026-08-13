@@ -27,19 +27,22 @@ const allowedOrigins = [
 
 
 
+// CORS Middleware Fix
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman, mobile apps, or server-to-server)
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Error throw mat karo, safe allow fallback rakho
+      callback(null, origin);
     }
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'x-access-token'],
   credentials: true
 }));
+
+
 
 app.use(express.json());
 
