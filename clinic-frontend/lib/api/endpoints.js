@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
     UPDATE_USER_STATUS: (userId) => `/super-admin/users/${userId}/status`,
     REVENUE_REPORTS: '/super-admin/revenue-reports',
     EXPORT_CSV: '/super-admin/export-csv',
+    SETTINGS: '/super-admin/settings',
 
   },
 

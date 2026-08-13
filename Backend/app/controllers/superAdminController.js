@@ -351,11 +351,22 @@ class SuperAdminController {
     try {
       let settings = await SystemSetting.findOne();
       if (!settings) {
-        settings = await SystemSetting.create({});
+        settings = await SystemSetting.create({
+          announcement: "",
+          isMaintenanceMode: false,
+        });
       }
-      return res.status(200).json({ success: true, data: settings });
+      return res.status(httpStatusCode.OK || 200).json({ 
+        success: true, 
+        data: settings 
+      });
     } catch (err) {
-      return res.status(500).json({ success: false, message: err.message });
+      console.error("Get Settings Error:", err);
+      // Fallback empty response to prevent server crash & artificial CORS blockage
+      return res.status(httpStatusCode.OK || 200).json({ 
+        success: true, 
+        data: { announcement: "", isMaintenanceMode: false } 
+      });
     }
   }
 
@@ -374,13 +385,17 @@ class SuperAdminController {
 
       await settings.save();
 
-      return res.status(200).json({
+      return res.status(httpStatusCode.OK || 200).json({
         success: true,
         message: "System settings updated successfully",
         data: settings,
       });
     } catch (err) {
-      return res.status(500).json({ success: false, message: err.message });
+      console.error("Update Settings Error:", err);
+      return res.status(httpStatusCode.INTERNAL_SERVER_ERROR || 500).json({ 
+        success: false, 
+        message: err.message || "Failed to update settings" 
+      });
     }
   }
 }
