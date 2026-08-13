@@ -1,9 +1,73 @@
 'use client';
-import React from 'react';
-import { Box, Typography, Grid, Paper, Button, Stack, Chip } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Box, Typography, Grid, Paper, Button, Stack, Chip, CircularProgress } from '@mui/material';
 import { DownloadOutlined } from '@mui/icons-material';
+import api from '@/lib/api/axios';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 
 export default function RevenueReportsPage() {
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [stats, setStats] = useState({
+    totalMrr: 0,
+    growthPercentage: 18.4,
+    proEarnings: 0,
+    enterpriseEarnings: 0,
+  });
+
+  // 1. Live Revenue Stats API Call
+  useEffect(() => {
+    const fetchRevenueStats = async () => {
+      try {
+        setLoading(true);
+        const res: any = await api.get(
+          API_ENDPOINTS.SUPER_ADMIN.REVENUE_REPORTS || '/super-admin/revenue-reports'
+        );
+        const data = res?.data?.data || res?.data || res;
+        if (data) {
+          setStats({
+            totalMrr: data.totalMrr || 0,
+            growthPercentage: data.growthPercentage || 18.4,
+            proEarnings: data.proEarnings || 0,
+            enterpriseEarnings: data.enterpriseEarnings || 0,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch revenue stats:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRevenueStats();
+  }, []);
+
+  // 2. Platform CSV Download Trigger Function
+  const handleExportCSV = async () => {
+    try {
+      setDownloading(true);
+      const endpoint = API_ENDPOINTS.SUPER_ADMIN.EXPORT_CSV || '/super-admin/export-csv';
+      const response: any = await api.get(endpoint, {
+        responseType: 'blob',
+      });
+
+      // Browser file download creation
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `platform-audit-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('CSV Download failed:', err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const reports = [
     {
       title: 'Monthly SaaS Revenue Statement',
@@ -38,8 +102,9 @@ export default function RevenueReportsPage() {
         <Button
           variant="contained"
           disableElevation
-          startIcon={<DownloadOutlined />}
-          onClick={() => alert('Exporting full platform audit CSV...')}
+          disabled={downloading}
+          startIcon={downloading ? <CircularProgress size={18} sx={{ color: '#FFF' }} /> : <DownloadOutlined />}
+          onClick={handleExportCSV}
           sx={{
             bgcolor: '#006D77',
             '&:hover': { bgcolor: '#004D54' },
@@ -52,7 +117,7 @@ export default function RevenueReportsPage() {
             boxShadow: '0 4px 14px rgba(0, 109, 119, 0.4)',
           }}
         >
-          Export Full Platform CSV
+          {downloading ? 'Downloading...' : 'Export Full Platform CSV'}
         </Button>
       </Box>
 
@@ -69,38 +134,44 @@ export default function RevenueReportsPage() {
           backgroundImage: 'linear-gradient(135deg, rgba(0, 109, 119, 0.25) 0%, rgba(15, 23, 42, 0.8) 100%)',
         }}
       >
-        <Grid container spacing={3} alignItems="center">
-          <Grid item xs={12} md={4} size={{xs:12,md:4}}>
-            <Typography variant="caption" sx={{ color: '#83C5BE', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
-              Gross Platform MRR
-            </Typography>
-            <Typography variant="h3" sx={{ fontWeight: 900, color: '#FFFFFF', mt: 0.5 }}>
-              ₹4,85,000
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#34D399', mt: 1, fontWeight: 700 }}>
-              +18.4% growth compared to last month
-            </Typography>
-          </Grid>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+            <CircularProgress sx={{ color: '#83C5BE' }} />
+          </Box>
+        ) : (
+          <Grid container spacing={3} alignItems="center">
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Typography variant="caption" sx={{ color: '#83C5BE', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                Gross Platform MRR
+              </Typography>
+              <Typography variant="h3" sx={{ fontWeight: 900, color: '#FFFFFF', mt: 0.5 }}>
+                ₹{stats.totalMrr.toLocaleString('en-IN')}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#34D399', mt: 1, fontWeight: 700 }}>
+                +{stats.growthPercentage}% growth compared to last month
+              </Typography>
+            </Grid>
 
-          <Grid item xs={12} md={8}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} justifyContent="flex-end">
-              <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', p: 2.5, borderRadius: '16px', minWidth: '180px' }}>
-                <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700 }}>Pro Tier Earnings</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: '#FFF', mt: 0.5 }}>₹2,20,000</Typography>
-              </Box>
-              <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', p: 2.5, borderRadius: '16px', minWidth: '180px' }}>
-                <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700 }}>Enterprise Earnings</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 900, color: '#FFF', mt: 0.5 }}>₹2,65,000</Typography>
-              </Box>
-            </Stack>
+            <Grid size={{ xs: 12, md: 8 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3} justifyContent="flex-end">
+                <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', p: 2.5, borderRadius: '16px', minWidth: '180px' }}>
+                  <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700 }}>Pro Tier Earnings</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#FFF', mt: 0.5 }}>₹{stats.proEarnings.toLocaleString('en-IN')}</Typography>
+                </Box>
+                <Box sx={{ bgcolor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', p: 2.5, borderRadius: '16px', minWidth: '180px' }}>
+                  <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 700 }}>Enterprise Earnings</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 900, color: '#FFF', mt: 0.5 }}>₹{stats.enterpriseEarnings.toLocaleString('en-IN')}</Typography>
+                </Box>
+              </Stack>
+            </Grid>
           </Grid>
-        </Grid>
+        )}
       </Paper>
 
       {/* Dark Report Cards Grid */}
       <Grid container spacing={3}>
         {reports.map((rep) => (
-          <Grid item xs={12} md={4} size={{xs:12,md:4}} key={rep.title}>
+          <Grid size={{ xs: 12, md: 4 }} key={rep.title}>
             <Paper
               elevation={0}
               sx={{
@@ -112,7 +183,7 @@ export default function RevenueReportsPage() {
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                justify: 'space-between',
+                justifyContent: 'space-between',
               }}
             >
               <Box>
@@ -128,7 +199,8 @@ export default function RevenueReportsPage() {
               <Button
                 variant="outlined"
                 fullWidth
-                onClick={() => alert(`Downloading ${rep.title}...`)}
+                disabled={downloading}
+                onClick={handleExportCSV}
                 startIcon={<DownloadOutlined />}
                 sx={{
                   borderColor: '#83C5BE',
@@ -143,7 +215,7 @@ export default function RevenueReportsPage() {
                   },
                 }}
               >
-                Download PDF Audit
+                Download CSV Audit
               </Button>
             </Paper>
           </Grid>

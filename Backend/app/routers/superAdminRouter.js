@@ -56,4 +56,14 @@ router.get('/export-csv', (req, res, next) => {
   superAdminController.exportRevenueCSV(req, res, next);
 });
 
+// System Settings Routes 
+router.get('/settings', (req, res, next) => {
+  // #swagger.tags = ['Super Admin']
+  superAdminController.getSystemSettings(req, res, next);
+});
+
+router.patch('/settings', (req, res, next) => {
+  // #swagger.tags = ['Super Admin']
+  superAdminController.updateSystemSettings(req, res, next);
+});
 module.exports = router;

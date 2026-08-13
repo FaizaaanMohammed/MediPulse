@@ -14,6 +14,8 @@ export const API_ENDPOINTS = {
     ONBOARD_CLINIC: '/super-admin/clinics/onboard',
     UPDATE_CLINIC_STATUS: (clinicId) => `/super-admin/clinics/${clinicId}/status`,
     UPDATE_USER_STATUS: (userId) => `/super-admin/users/${userId}/status`,
+    REVENUE_REPORTS: '/super-admin/revenue-reports',
+    EXPORT_CSV: '/super-admin/export-csv',
 
   },
 

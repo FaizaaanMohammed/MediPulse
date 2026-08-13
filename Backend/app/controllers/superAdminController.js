@@ -2,6 +2,7 @@ const Clinic = require("../models/ClinicModel");
 const User = require("../models/UserModels");
 const Subscription = require("../models/SubscriptionModel");
 const httpStatusCode = require("../utils/httpStatusCode");
+const SystemSetting = require("../models/SystemSettingModel");
 
 class SuperAdminController {
   // 1. GET SYSTEM GOVERNANCE DASHBOARD STATS
@@ -342,6 +343,44 @@ class SuperAdminController {
         success: false,
         message: err.message || "Internal Server Error",
       });
+    }
+  }
+
+  // GET SYSTEM SETTINGS
+  async getSystemSettings(req, res) {
+    try {
+      let settings = await SystemSetting.findOne();
+      if (!settings) {
+        settings = await SystemSetting.create({});
+      }
+      return res.status(200).json({ success: true, data: settings });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
+  // UPDATE SYSTEM SETTINGS
+  async updateSystemSettings(req, res) {
+    try {
+      const { announcement, isMaintenanceMode } = req.body;
+      
+      let settings = await SystemSetting.findOne();
+      if (!settings) {
+        settings = new SystemSetting({});
+      }
+
+      if (announcement !== undefined) settings.announcement = announcement;
+      if (isMaintenanceMode !== undefined) settings.isMaintenanceMode = isMaintenanceMode;
+
+      await settings.save();
+
+      return res.status(200).json({
+        success: true,
+        message: "System settings updated successfully",
+        data: settings,
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message });
     }
   }
 }
