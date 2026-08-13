@@ -13,16 +13,18 @@ import {
   Divider,
   MenuItem,
   Grid,
+  CircularProgress,
 } from '@mui/material';
 import { CloseOutlined, LocalHospitalOutlined } from '@mui/icons-material';
 
 interface OnboardClinicModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: { name: string; ownerName: string; email: string; city: string; plan: string }) => void;
+  onSave: (data: { name: string; ownerName: string; email: string; city: string; plan: string }) => Promise<void> | void;
 }
 
 export default function OnboardClinicModal({ open, onClose, onSave }: OnboardClinicModalProps) {
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     ownerName: '',
@@ -31,16 +33,23 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
     plan: 'Pro Monthly',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
-    setFormData({ name: '', ownerName: '', email: '', city: '', plan: 'Pro Monthly' });
+    setLoading(true);
+    try {
+      await onSave(formData);
+      setFormData({ name: '', ownerName: '', email: '', city: '', plan: 'Pro Monthly' });
+    } catch (err) {
+      console.error('Failed to onboard clinic:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={loading ? undefined : onClose}
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -64,7 +73,7 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
               Onboard New Clinic Tenant
             </Typography>
           </Box>
-          <IconButton onClick={onClose} sx={{ color: '#94A3B8' }}>
+          <IconButton onClick={onClose} disabled={loading} sx={{ color: '#94A3B8' }}>
             <CloseOutlined fontSize="small" />
           </IconButton>
         </DialogTitle>
@@ -73,7 +82,7 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
 
         <DialogContent sx={{ py: 3, bgcolor: '#1E293B' }}>
           <Grid container spacing={2.5}>
-            <Grid item xs={12} size={{xs:6}}>
+            <Grid item xs={12} size={{ xs: 6 }}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Clinic Name
               </Typography>
@@ -95,7 +104,7 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
               />
             </Grid>
 
-            <Grid item xs={6} size={{xs:6}}>
+            <Grid item xs={6} size={{ xs: 6 }}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Clinic Admin / Owner Name
               </Typography>
@@ -116,7 +125,7 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
               />
             </Grid>
 
-            <Grid item xs={6} size={{xs:6}}>
+            <Grid item xs={6} size={{ xs: 6 }}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Contact Email
               </Typography>
@@ -138,7 +147,7 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
               />
             </Grid>
 
-            <Grid item xs={6} size={{xs:6}}>
+            <Grid item xs={6} size={{ xs: 6 }}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Location / City
               </Typography>
@@ -159,7 +168,7 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
               />
             </Grid>
 
-            <Grid item xs={6} size={{xs:6}}>
+            <Grid item xs={6} size={{ xs: 6 }}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Assigned SaaS Tier
               </Typography>
@@ -196,11 +205,12 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
         <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
 
         <DialogActions sx={{ p: 2, bgcolor: '#1E293B' }}>
-          <Button onClick={onClose} sx={{ color: '#94A3B8', fontWeight: 700 }}>
+          <Button onClick={onClose} disabled={loading} sx={{ color: '#94A3B8', fontWeight: 700 }}>
             Cancel
           </Button>
           <Button
             type="submit"
+            disabled={loading}
             variant="contained"
             disableElevation
             sx={{
@@ -212,7 +222,7 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
               px: 3,
             }}
           >
-            Confirm & Onboard
+            {loading ? <CircularProgress size={20} sx={{ color: '#FFF' }} /> : 'Confirm & Onboard'}
           </Button>
         </DialogActions>
       </form>

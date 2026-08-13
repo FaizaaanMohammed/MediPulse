@@ -20,9 +20,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 const allowedOrigins = [
   "https://e-commerce-lemon-nine-65.vercel.app", 
   "https://e-commerce-djzo.vercel.app",    
-  "http://localhost:5173",                       
+  "http://localhost:5000",                       
   "http://localhost:3000"  ,
-  "https://medi-pulse-eta.vercel.app/"                     
+  "https://medi-pulse-eta.vercel.app"                     
 ];
 
 
@@ -36,6 +36,8 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true
 }));
 

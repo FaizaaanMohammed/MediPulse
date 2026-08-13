@@ -32,6 +32,7 @@ import {
 } from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { handleLogout } from '@/lib/utils/auth';
 
 const drawerWidth = 260;
 
@@ -104,7 +105,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
       {/* Bottom Logout */}
       <Box sx={{ p: 2 }}>
         <ListItemButton
-          onClick={() => router.push('/login')}
+          onClick={handleLogout}
           sx={{ borderRadius: '12px', color: '#F87171', '&:hover': { bgcolor: 'rgba(248, 113, 113, 0.1)' } }}
         >
           <ListItemIcon sx={{ color: '#F87171', minWidth: 38 }}>
@@ -187,7 +188,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
                 },
               }}
             >
-              <MenuItem onClick={() => router.push('/login')} sx={{ color: '#F87171', fontWeight: 800, gap: 1, borderRadius: '10px' }}>
+              <MenuItem onClick={handleLogout} sx={{ color: '#F87171', fontWeight: 800, gap: 1, borderRadius: '10px' }}>
                 <LogoutOutlined fontSize="small" /> Logout System
               </MenuItem>
             </Menu>

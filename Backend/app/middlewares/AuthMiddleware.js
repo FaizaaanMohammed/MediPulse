@@ -20,7 +20,7 @@ const AuthCheck = async (req, res, next) => {
       token = token.split(" ")[1];
     }
 
-    const decoded = jwt.verify(token, process.env.jwt_secret);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Attach decoded user payload to request
     req.user = decoded; 

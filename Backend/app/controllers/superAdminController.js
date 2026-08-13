@@ -13,6 +13,28 @@ class SuperAdminController {
       const totalDoctors = await User.countDocuments({ role: "DOCTOR" });
       const totalPatients = await User.countDocuments({ role: "PATIENT" });
 
+      // Dynamic MRR Calculation from Active Clinics
+      const mrrResult = await Clinic.aggregate([
+        { $match: { status: "APPROVED" } }, // Sirf Active/Approved Clinics
+        {
+          $lookup: {
+            from: "subscriptions", // Collection name (check your DB collection name)
+            localField: "subscriptionPlan",
+            foreignField: "_id",
+            as: "plan",
+          },
+        },
+        { $unwind: "$plan" },
+        {
+          $group: {
+            _id: null,
+            totalMrr: { $sum: "$plan.price" },
+          },
+        },
+      ]);
+
+      const mrr = mrrResult.length > 0 ? mrrResult[0].totalMrr : 0;
+
       return res.status(httpStatusCode.OK).json({
         success: true,
         data: {
@@ -21,7 +43,7 @@ class SuperAdminController {
           pendingClinics,
           totalDoctors,
           totalPatients,
-          mrr: 485000, // Monthly Recurring Revenue
+          mrr, // Live calculated MRR
         },
       });
     } catch (err) {
@@ -57,7 +79,8 @@ class SuperAdminController {
   // 3. ONBOARD NEW CLINIC TENANT
   async onboardClinic(req, res) {
     try {
-      const { name, email, phone, city, address, ownerId, subscriptionPlan } = req.body;
+      const { name, email, phone, city, address, ownerId, subscriptionPlan } =
+        req.body;
 
       if (!name || !email || !phone || !city) {
         return res.status(httpStatusCode.BAD_REQUEST).json({
@@ -106,7 +129,7 @@ class SuperAdminController {
       const clinic = await Clinic.findByIdAndUpdate(
         clinicId,
         { status },
-        { new: true }
+        { new: true },
       );
 
       if (!clinic) {
@@ -147,7 +170,7 @@ class SuperAdminController {
         plan = await Subscription.findByIdAndUpdate(
           id,
           { name, price, period, features, highlight },
-          { new: true }
+          { new: true },
         );
       } else {
         // Create Plan
@@ -189,7 +212,7 @@ class SuperAdminController {
       const user = await User.findByIdAndUpdate(
         userId,
         { status },
-        { new: true }
+        { new: true },
       );
 
       if (!user) {
@@ -208,6 +231,50 @@ class SuperAdminController {
       return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: err.message,
+      });
+    }
+  }
+
+  // GET All Platform Users across system
+  async getAllPlatformUsers(req, res) {
+    try {
+      const { role, status, search } = req.query;
+
+      let query = {};
+
+      // Filter by Role (DOCTOR, PATIENT, CLINIC_ADMIN, etc.)
+      if (role && role !== "All") {
+        query.role = role.toUpperCase();
+      }
+
+      // Filter by Status (ACTIVE, BLOCKED)
+      if (status && status !== "All") {
+        query.status = status.toUpperCase();
+      }
+
+      // Search by Name or Email
+      if (search) {
+        query.$or = [
+          { name: { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      // Direct find without invalid populate
+      const users = await User.find(query)
+        .select("-password")
+        .sort({ createdAt: -1 });
+
+      return res.status(200).json({
+        success: true,
+        count: users.length,
+        data: users,
+      });
+    } catch (err) {
+      console.error("Fetch Platform Users Error:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message || "Internal Server Error",
       });
     }
   }

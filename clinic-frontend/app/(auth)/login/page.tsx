@@ -71,17 +71,22 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // Centralized API Endpoint Call
+      // 1. API Call
       const res = await api.post(API_ENDPOINTS.AUTH.LOGIN, {
         email: formData.email,
         password: formData.password,
       });
 
-      const responseData = res.data?.data || res.data;
-      const { token, user } = responseData;
+      // 2. Exact destructuring as per response JSON structure
+      const token = res.data.token || res.data.data?.token;
+      const user = res.data.data?.user || res.data.data || res.data.user;
 
-      // Role Access Validation
-      const formattedSelectedRole = role.replace('-', '_').toUpperCase();
+      if (!token || !user) {
+        throw new Error("Invalid response structure from server");
+      }
+
+      // 3. Role Validation Check
+      const formattedSelectedRole = role.replace('-', '_').toUpperCase(); // "super-admin" -> "SUPER_ADMIN"
       if (user.role !== formattedSelectedRole) {
         setSnackbar({
           open: true,
@@ -92,9 +97,13 @@ function LoginForm() {
         return;
       }
 
-      // Save Tokens & Session
+      // 4. LocalStorage Sync Write
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+
+      // 4.1. Cookies Set (Middleware & Server Component Sync)
+      document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
+      document.cookie = `user=${encodeURIComponent(JSON.stringify(user))}; path=/; max-age=86400; SameSite=Lax`;
 
       setSnackbar({
         open: true,
@@ -102,8 +111,10 @@ function LoginForm() {
         severity: 'success',
       });
 
-      // Role-based Dynamic Redirection
+      // 5. Dynamic Safe Redirect with Token Guarantee
       setTimeout(() => {
+        router.refresh(); // Refresh Next.js Auth Context before pushing route
+        
         switch (user.role) {
           case 'SUPER_ADMIN':
             router.push('/super-admin/dashboard');
@@ -120,15 +131,14 @@ function LoginForm() {
           default:
             router.push('/');
         }
-      }, 800);
+      }, 300);
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid email or password. Please try again.';
+      const msg = err.response?.data?.message || err.message || 'Invalid email or password. Please try again.';
       setSnackbar({
         open: true,
         message: msg,
         severity: 'error',
       });
-    } finally {
       setLoading(false);
     }
   };

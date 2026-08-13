@@ -1,18 +1,61 @@
 'use client';
-import React from 'react';
-import { Grid, Paper, Box, Typography, Chip } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Grid, Paper, Box, Typography, Chip, Skeleton } from '@mui/material';
 import {
   LocalHospitalOutlined,
   AttachMoneyOutlined,
   PeopleAltOutlined,
   TrendingUpOutlined,
 } from '@mui/icons-material';
+import api from '@/lib/api/axios';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 
-export default function StatsCards() {
+interface StatsCardsProps {
+  refreshKey?: number;
+}
+
+export default function StatsCards({ refreshKey = 0 }: StatsCardsProps) {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    totalClinics: 0,
+    monthlyRevenue: 0,
+    totalDoctors: 0,
+    totalPatients: 0,
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        const res: any = await api.get(API_ENDPOINTS.SUPER_ADMIN.STATS);
+
+        // Extract nested data object cleanly
+        const payload = res?.data?.data || res?.data || res;
+
+        
+
+        setData({
+          totalClinics: Number(payload?.totalClinics || 0),
+          monthlyRevenue: Number(payload?.mrr || payload?.monthlyRevenue || 0),
+          totalDoctors: Number(payload?.totalDoctors || 0),
+          totalPatients: Number(payload?.totalPatients || 0),
+        });
+
+        
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [refreshKey]);
+
   const stats = [
     {
       title: 'Total Onboarded Clinics',
-      value: '42 Clinics',
+      value: `${data.totalClinics} Clinics`,
       growth: '+12% this month',
       icon: <LocalHospitalOutlined />,
       color: '#83C5BE',
@@ -21,7 +64,7 @@ export default function StatsCards() {
     },
     {
       title: 'Platform Monthly Revenue',
-      value: '₹4,85,000',
+      value: `₹${data.monthlyRevenue.toLocaleString('en-IN')}`,
       growth: '+18.4% MRR',
       icon: <AttachMoneyOutlined />,
       color: '#34D399',
@@ -30,7 +73,7 @@ export default function StatsCards() {
     },
     {
       title: 'Active Doctors Across Clinics',
-      value: '184 Doctors',
+      value: `${data.totalDoctors} Doctors`,
       growth: 'Active Panel',
       icon: <PeopleAltOutlined />,
       color: '#60A5FA',
@@ -39,7 +82,7 @@ export default function StatsCards() {
     },
     {
       title: 'Total Patient Visits Logged',
-      value: '12,450',
+      value: data.totalPatients.toLocaleString('en-IN'),
       growth: '+24% OPD traffic',
       icon: <TrendingUpOutlined />,
       color: '#FBBF24',
@@ -91,9 +134,14 @@ export default function StatsCards() {
             <Typography variant="caption" sx={{ color: '#94A3B8', fontWeight: 600, display: 'block' }}>
               {item.title}
             </Typography>
-            <Typography variant="h4" sx={{ fontWeight: 900, color: '#FFFFFF', mt: 0.5 }}>
-              {item.value}
-            </Typography>
+
+            {loading ? (
+              <Skeleton variant="text" width="60%" height={45} sx={{ bgcolor: 'rgba(255, 255, 255, 0.1)', mt: 0.5 }} />
+            ) : (
+              <Typography variant="h4" sx={{ fontWeight: 900, color: '#FFFFFF', mt: 0.5 }}>
+                {item.value}
+              </Typography>
+            )}
           </Paper>
         </Grid>
       ))}

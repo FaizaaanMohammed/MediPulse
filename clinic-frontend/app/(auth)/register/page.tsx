@@ -11,6 +11,9 @@ import {
   InputAdornment,
   IconButton,
   Stack,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from '@mui/material';
 import {
   EmailOutlined,
@@ -22,10 +25,16 @@ import {
   ArrowForward,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import api from '@/lib/api/axios';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState('patient');
+  const [loading, setLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,9 +42,55 @@ export default function RegisterPage() {
     password: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Snackbar Toast Notification State
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error' | 'warning' | 'info',
+  });
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Registering user:', { role, ...formData });
+    setLoading(true);
+
+    try {
+      // Backend ENUM format mapping (e.g. "super_admin" -> "SUPER_ADMIN")
+      const formattedRole = role.toUpperCase();
+
+      const res = await api.post(API_ENDPOINTS.AUTH.REGISTER, {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role: formattedRole,
+      });
+
+      setSnackbar({
+        open: true,
+        message: 'Account created successfully! Redirecting to login...',
+        severity: 'success',
+      });
+
+      // Redirect to login page with pre-selected role
+      setTimeout(() => {
+        const cleanRoleParam = role.replace('_', '-');
+        router.push(`/login?role=${cleanRoleParam}`);
+      }, 1200);
+
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Registration failed. Please check your details.';
+      setSnackbar({
+        open: true,
+        message: msg,
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -87,7 +142,7 @@ export default function RegisterPage() {
               >
                 Medi<span style={{ color: '#83C5BE' }}>Pulse</span>
               </Typography>
-              <Typography variant="body2" sx={{ color: '#CBD5E1', fontSize: '0.875rem',mb:"20px" }}>
+              <Typography variant="body2" sx={{ color: '#CBD5E1', fontSize: '0.875rem', mb: "20px" }}>
                 Create your account to get started
               </Typography>
             </Box>
@@ -273,9 +328,10 @@ export default function RegisterPage() {
                 <Button
                   type="submit"
                   fullWidth
+                  disabled={loading}
                   variant="contained"
                   disableElevation
-                  endIcon={<ArrowForward sx={{ fontSize: 18 }} />}
+                  endIcon={!loading && <ArrowForward sx={{ fontSize: 18 }} />}
                   sx={{
                     bgcolor: '#006D77',
                     color: '#FFFFFF',
@@ -289,7 +345,7 @@ export default function RegisterPage() {
                     '&:hover': { bgcolor: '#004D54' },
                   }}
                 >
-                  Create Account
+                  {loading ? <CircularProgress size={24} sx={{ color: '#FFF' }} /> : 'Create Account'}
                 </Button>
               </Stack>
             </Box>
@@ -311,6 +367,23 @@ export default function RegisterPage() {
           </CardContent>
         </Card>
       </Container>
+
+      {/* Floating Snackbar Notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3500}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%', borderRadius: '10px', fontWeight: 600 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

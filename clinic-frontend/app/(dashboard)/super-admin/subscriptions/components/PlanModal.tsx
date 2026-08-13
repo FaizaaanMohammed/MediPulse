@@ -14,13 +14,17 @@ import {
   Switch,
   FormControlLabel,
   Grid,
+  CircularProgress,
 } from '@mui/material';
 import { CloseOutlined } from '@mui/icons-material';
+import api from '@/lib/api/axios';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 
 export interface PlanData {
   id?: string;
+  _id?: string;
   name: string;
-  price: string;
+  price: string | number;
   period: string;
   features: string[];
   highlight: boolean;
@@ -29,11 +33,12 @@ export interface PlanData {
 interface PlanModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: PlanData) => void;
+  onSave?: (data: PlanData) => void;
   initialData?: PlanData | null;
+  onSuccess?: () => void;
 }
 
-export default function PlanModal({ open, onClose, onSave, initialData }: PlanModalProps) {
+export default function PlanModal({ open, onClose, onSave, initialData, onSuccess }: PlanModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     price: '',
@@ -41,15 +46,16 @@ export default function PlanModal({ open, onClose, onSave, initialData }: PlanMo
     featuresText: '',
     highlight: false,
   });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (initialData) {
       setFormData({
-        name: initialData.name,
-        price: initialData.price,
-        period: initialData.period,
-        featuresText: initialData.features.join('\n'),
-        highlight: initialData.highlight,
+        name: initialData.name || '',
+        price: String(initialData.price ?? ''),
+        period: initialData.period || 'per Month / Clinic',
+        featuresText: Array.isArray(initialData.features) ? initialData.features.join('\n') : '',
+        highlight: Boolean(initialData.highlight),
       });
     } else {
       setFormData({
@@ -62,21 +68,54 @@ export default function PlanModal({ open, onClose, onSave, initialData }: PlanMo
     }
   }, [initialData, open]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const parsedFeatures = formData.featuresText
       .split('\n')
       .map((f) => f.trim())
       .filter((f) => f.length > 0);
 
-    onSave({
-      id: initialData?.id,
+    const payload = {
       name: formData.name,
       price: formData.price,
       period: formData.period,
       features: parsedFeatures.length > 0 ? parsedFeatures : ['Standard Support'],
       highlight: formData.highlight,
-    });
+    };
+
+    try {
+      setLoading(true);
+
+      const planId = initialData?.id || initialData?._id;
+
+      if (planId) {
+        // UPDATE API Call
+        const updateUrl = API_ENDPOINTS.SUBSCRIPTIONS?.UPDATE
+          ? API_ENDPOINTS.SUBSCRIPTIONS.UPDATE(planId)
+          : `/subscriptions/${planId}`;
+
+        await api.put(updateUrl, payload).catch(() => api.patch(updateUrl, payload));
+      } else {
+        // CREATE API Call
+        const createUrl = API_ENDPOINTS.SUBSCRIPTIONS?.CREATE || '/subscriptions';
+        await api.post(createUrl, payload);
+      }
+
+      if (onSave) {
+        onSave({ id: planId, ...payload });
+      }
+
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      onClose();
+    } catch (err) {
+      console.error('Subscription Plan API Error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -135,7 +174,7 @@ export default function PlanModal({ open, onClose, onSave, initialData }: PlanMo
             </Box>
 
             <Grid container spacing={2}>
-              <Grid item xs={6} size={{xs:6}}>
+              <Grid item xs={6} size={{ xs: 6 }}>
                 <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                   Price (INR)
                 </Typography>
@@ -158,7 +197,7 @@ export default function PlanModal({ open, onClose, onSave, initialData }: PlanMo
                 />
               </Grid>
 
-              <Grid item xs={6} size={{xs:6}}>
+              <Grid item xs={6} size={{ xs: 6 }}>
                 <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                   Billing Cycle
                 </Typography>
@@ -229,13 +268,14 @@ export default function PlanModal({ open, onClose, onSave, initialData }: PlanMo
         <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
 
         <DialogActions sx={{ p: 2, bgcolor: '#1E293B' }}>
-          <Button onClick={onClose} sx={{ color: '#94A3B8', fontWeight: 700 }}>
+          <Button onClick={onClose} disabled={loading} sx={{ color: '#94A3B8', fontWeight: 700 }}>
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
             disableElevation
+            disabled={loading}
             sx={{
               bgcolor: '#006D77',
               '&:hover': { bgcolor: '#004D54' },
@@ -245,7 +285,7 @@ export default function PlanModal({ open, onClose, onSave, initialData }: PlanMo
               px: 3,
             }}
           >
-            {initialData ? 'Update Plan' : 'Save Plan'}
+            {loading ? <CircularProgress size={20} sx={{ color: '#FFF' }} /> : initialData ? 'Update Plan' : 'Save Plan'}
           </Button>
         </DialogActions>
       </form>

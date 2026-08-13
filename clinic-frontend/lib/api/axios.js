@@ -7,13 +7,23 @@ const api = axios.create({
   },
 });
 
-// Automatic JWT Bearer Token Injection
+// Helper: Cookie se token turant padhne ke liye
+const getTokenFromCookie = () => {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(^| )token=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+};
+
+// Automatic Bearer Token Interceptor
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
+      // Pehle LocalStorage dekho, agar late-hydrate hone se null mile toh Cookie se utha lo
+      let token = localStorage.getItem('token') || getTokenFromCookie();
+
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        const cleanToken = token.replace(/^"(.*)"$/, '$1').trim();
+        config.headers.Authorization = `Bearer ${cleanToken}`;
       }
     }
     return config;
