@@ -21,15 +21,17 @@ import {
   CheckCircleOutlined,
   CancelOutlined,
   EventRepeatOutlined,
+  EventBusyOutlined,
 } from '@mui/icons-material';
 
 export interface AppointmentItem {
   id: string;
+  _id?: string;
   patientName: string;
   doctorName: string;
   date: string;
   timeSlot: string;
-  status: 'In Progress' | 'Waiting' | 'Completed' | 'Cancelled';
+  status: 'In Progress' | 'Waiting' | 'Completed' | 'Cancelled' | string;
   type: string;
 }
 
@@ -57,16 +59,59 @@ export default function AppointmentTable({
     setSelectedAppt(null);
   };
 
-  const getStatusChip = (status: AppointmentItem['status']) => {
-    switch (status) {
-      case 'In Progress':
-        return <Chip label="In Progress" size="small" color="warning" variant="outlined" sx={{ fontWeight: 700, fontSize: '0.75rem' }} />;
-      case 'Waiting':
-        return <Chip label="Waiting" size="small" color="info" variant="outlined" sx={{ fontWeight: 700, fontSize: '0.75rem' }} />;
-      case 'Completed':
-        return <Chip label="Completed" size="small" color="success" variant="outlined" sx={{ fontWeight: 700, fontSize: '0.75rem' }} />;
-      case 'Cancelled':
-        return <Chip label="Cancelled" size="small" color="error" variant="outlined" sx={{ fontWeight: 700, fontSize: '0.75rem' }} />;
+  const getStatusChip = (status: string) => {
+    const s = status?.toLowerCase();
+    switch (s) {
+      case 'in progress':
+      case 'in_progress':
+        return (
+          <Chip
+            label="In Progress"
+            size="small"
+            color="warning"
+            variant="outlined"
+            sx={{ fontWeight: 700, fontSize: '0.75rem' }}
+          />
+        );
+      case 'waiting':
+        return (
+          <Chip
+            label="Waiting"
+            size="small"
+            color="info"
+            variant="outlined"
+            sx={{ fontWeight: 700, fontSize: '0.75rem' }}
+          />
+        );
+      case 'completed':
+        return (
+          <Chip
+            label="Completed"
+            size="small"
+            color="success"
+            variant="outlined"
+            sx={{ fontWeight: 700, fontSize: '0.75rem' }}
+          />
+        );
+      case 'cancelled':
+        return (
+          <Chip
+            label="Cancelled"
+            size="small"
+            color="error"
+            variant="outlined"
+            sx={{ fontWeight: 700, fontSize: '0.75rem' }}
+          />
+        );
+      default:
+        return (
+          <Chip
+            label={status || 'Waiting'}
+            size="small"
+            variant="outlined"
+            sx={{ color: '#94A3B8', borderColor: '#334155', fontWeight: 700, fontSize: '0.75rem' }}
+          />
+        );
     }
   };
 
@@ -86,24 +131,52 @@ export default function AppointmentTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {appointments.map((row) => (
-              <TableRow key={row.id} sx={{ '& td': { borderColor: '#334155', color: '#FFFFFF', py: 2 } }}>
-                <TableCell sx={{ fontWeight: 700, color: '#83C5BE' }}>{row.id}</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>{row.patientName}</TableCell>
-                <TableCell sx={{ color: '#CBD5E1' }}>{row.doctorName}</TableCell>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>{row.timeSlot}</Typography>
-                  <Typography variant="caption" sx={{ color: '#94A3B8' }}>{row.date}</Typography>
-                </TableCell>
-                <TableCell sx={{ color: '#CBD5E1' }}>{row.type}</TableCell>
-                <TableCell>{getStatusChip(row.status)}</TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" onClick={(e) => handleMenuClick(e, row)} sx={{ color: '#94A3B8' }}>
-                    <MoreVertOutlined fontSize="small" />
-                  </IconButton>
+            {appointments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} sx={{ textAlign: 'center', py: 6, borderColor: '#334155' }}>
+                  <EventBusyOutlined sx={{ fontSize: 44, color: '#94A3B8', mb: 1 }} />
+                  <Typography variant="subtitle1" sx={{ color: '#FFFFFF', fontWeight: 600 }}>
+                    No appointments in queue
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                    Click &apos;New Booking&apos; to schedule an appointment.
+                  </Typography>
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              appointments.map((row) => (
+                <TableRow
+                  key={row.id}
+                  sx={{
+                    '& td': { borderColor: '#334155', color: '#FFFFFF', py: 2 },
+                    '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.02)' },
+                  }}
+                >
+                  <TableCell sx={{ fontWeight: 700, color: '#83C5BE' }}>{row.id}</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>{row.patientName}</TableCell>
+                  <TableCell sx={{ color: '#CBD5E1' }}>{row.doctorName}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {row.timeSlot}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                      {row.date}
+                    </Typography>
+                  </TableCell>
+                  <TableCell sx={{ color: '#CBD5E1' }}>{row.type}</TableCell>
+                  <TableCell>{getStatusChip(row.status)}</TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleMenuClick(e, row)}
+                      sx={{ color: '#94A3B8', '&:hover': { color: '#FFF' } }}
+                    >
+                      <MoreVertOutlined fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
@@ -129,7 +202,9 @@ export default function AppointmentTable({
             handleMenuClose();
           }}
         >
-          <ListItemIcon><CheckCircleOutlined fontSize="small" sx={{ color: '#4ADE80' }} /></ListItemIcon>
+          <ListItemIcon>
+            <CheckCircleOutlined fontSize="small" sx={{ color: '#4ADE80' }} />
+          </ListItemIcon>
           <ListItemText primary="Mark Completed" primaryTypographyProps={{ fontSize: '0.85rem' }} />
         </MenuItem>
 
@@ -139,7 +214,9 @@ export default function AppointmentTable({
             handleMenuClose();
           }}
         >
-          <ListItemIcon><EventRepeatOutlined fontSize="small" sx={{ color: '#FBBF24' }} /></ListItemIcon>
+          <ListItemIcon>
+            <EventRepeatOutlined fontSize="small" sx={{ color: '#FBBF24' }} />
+          </ListItemIcon>
           <ListItemText primary="Reschedule Slot" primaryTypographyProps={{ fontSize: '0.85rem' }} />
         </MenuItem>
 
@@ -149,8 +226,13 @@ export default function AppointmentTable({
             handleMenuClose();
           }}
         >
-          <ListItemIcon><CancelOutlined fontSize="small" sx={{ color: '#F87171' }} /></ListItemIcon>
-          <ListItemText primary="Cancel Visit" primaryTypographyProps={{ fontSize: '0.85rem', color: '#F87171' }} />
+          <ListItemIcon>
+            <CancelOutlined fontSize="small" sx={{ color: '#F87171' }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Cancel Visit"
+            primaryTypographyProps={{ fontSize: '0.85rem', color: '#F87171' }}
+          />
         </MenuItem>
       </Menu>
     </Paper>

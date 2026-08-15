@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const appointmentSchema = new mongoose.Schema(
   {
+    clinicId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Clinic",
+      required: true,
+    },
     patientId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -12,28 +17,37 @@ const appointmentSchema = new mongoose.Schema(
       ref: "Doctor",
       required: true,
     },
-    clinicId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Clinic",
-      required: true,
+    appointmentId: {
+      type: String,
     },
     appointmentDate: {
       type: Date,
-      required: true,
+      default: Date.now,
     },
     timeSlot: {
       type: String,
-      required: true, // e.g. "10:30 AM"
+      required: true,
     },
+    slotTime: {
+      type: String,
+    },
+    type: {
+      type: String,
+      default: "General Checkup",
+    },
+    notes: {
+      type: String,
+    },
+    // 🔥 Yahan add hoga WAITING / PENDING enum
     status: {
       type: String,
-      enum: ["SCHEDULED", "COMPLETED", "CANCELLED"],
-      default: "SCHEDULED",
+      enum: ["WAITING", "IN_PROGRESS", "COMPLETED", "CANCELLED", "PENDING", "BOOKED"],
+      default: "WAITING",
     },
     paymentStatus: {
       type: String,
-      enum: ["PENDING", "PAID", "REFUNDED"],
-      default: "PENDING",
+      enum: ["Paid", "Pending", "PAID", "PENDING"],
+      default: "Pending",
     },
   },
   { timestamps: true }

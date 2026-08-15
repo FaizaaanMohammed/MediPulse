@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -27,8 +27,23 @@ export default function RescheduleModal({
   onClose,
   onConfirm,
 }: RescheduleModalProps) {
-  const [newDate, setNewDate] = React.useState('2026-08-12');
-  const [newTime, setNewTime] = React.useState('11:00 AM');
+  const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newTime, setNewTime] = useState('10:30 AM');
+
+  // Pre-fill existing appointment slot if available
+  useEffect(() => {
+    if (appointment) {
+      if (appointment.date && appointment.date !== 'Today') {
+        const parsedDate = new Date(appointment.date);
+        if (!isNaN(parsedDate.getTime())) {
+          setNewDate(parsedDate.toISOString().split('T')[0]);
+        }
+      }
+      if (appointment.timeSlot) {
+        setNewTime(appointment.timeSlot);
+      }
+    }
+  }, [appointment, open]);
 
   const dialogSx = {
     bgcolor: '#1E293B',
@@ -45,7 +60,8 @@ export default function RescheduleModal({
 
   const handleSave = () => {
     if (appointment) {
-      onConfirm(appointment.id, newDate, newTime);
+      const apptId = appointment._id || appointment.id;
+      onConfirm(apptId, newDate, newTime);
     }
   };
 
@@ -63,14 +79,14 @@ export default function RescheduleModal({
       <DialogContent dividers sx={{ borderColor: '#334155', px: 3, py: 2.5 }}>
         <Stack spacing={2.5}>
           <Typography variant="body2" sx={{ color: '#CBD5E1' }}>
-            Patient: <strong style={{ color: '#FFF' }}>{appointment?.patientName}</strong> ({appointment?.id})
+            Patient: <strong style={{ color: '#FFF' }}>{appointment?.patientName || 'Patient'}</strong> ({appointment?.id || 'APT'})
           </Typography>
 
           <TextField
             fullWidth
             type="date"
             label="New Date"
-            defaultValue={newDate}
+            value={newDate}
             onChange={(e) => setNewDate(e.target.value)}
             InputLabelProps={{ shrink: true, sx: { color: '#94A3B8' } }}
             InputProps={{ sx: inputStyle }}
@@ -86,9 +102,12 @@ export default function RescheduleModal({
             InputProps={{ sx: inputStyle }}
           >
             <MenuItem value="09:30 AM">09:30 AM</MenuItem>
+            <MenuItem value="10:00 AM">10:00 AM</MenuItem>
             <MenuItem value="10:30 AM">10:30 AM</MenuItem>
             <MenuItem value="11:00 AM">11:00 AM</MenuItem>
+            <MenuItem value="11:30 AM">11:30 AM</MenuItem>
             <MenuItem value="02:00 PM">02:00 PM</MenuItem>
+            <MenuItem value="03:30 PM">03:30 PM</MenuItem>
             <MenuItem value="04:30 PM">04:30 PM</MenuItem>
           </TextField>
         </Stack>

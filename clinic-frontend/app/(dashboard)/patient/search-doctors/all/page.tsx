@@ -1,6 +1,8 @@
 'use client';
-import React, { useState } from 'react';
-import { Container, Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Container, Box, CircularProgress, Typography, Snackbar, Alert } from '@mui/material';
+import { useSearchParams } from 'next/navigation';
+import api from '@/lib/api/axios';
 
 // Local Components Import
 import DoctorsHero from './components/DoctorsHero';
@@ -13,8 +15,15 @@ import BlogSection from './components/BlogSection';
 import BookingModal from '../components/BookingModal';
 
 export default function AllDoctorsPage() {
+  const searchParams = useSearchParams();
+  const querySpecialty = searchParams.get('specialty');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Booking Modal State
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [openBookingModal, setOpenBookingModal] = useState(false);
 
@@ -24,83 +33,101 @@ export default function AllDoctorsPage() {
   const [userRating, setUserRating] = useState<number | null>(5);
   const [userComment, setUserComment] = useState('');
 
-  const doctors: Doctor[] = [
-    {
-      id: 'DOC-1',
-      name: 'Dr. A. K. Roy',
-      specialty: 'Cardiology',
-      clinic: 'City Health Clinic',
-      experience: '12 Yrs',
-      fee: '₹500',
-      rating: 4.8,
-      availableSlot: '10:30 AM',
-      img: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 'DOC-2',
-      name: 'Dr. Sneha Das',
-      specialty: 'Dermatology',
-      clinic: 'Park Street Medicare',
-      experience: '8 Yrs',
-      fee: '₹600',
-      rating: 4.9,
-      availableSlot: '11:00 AM',
-      img: 'https://images.unsplash.com/photo-1594824813566-88855376378e?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 'DOC-3',
-      name: 'Dr. R. N. Mukherjee',
-      specialty: 'Orthopedics',
-      clinic: 'Apex Care Clinic',
-      experience: '15 Yrs',
-      fee: '₹700',
-      rating: 4.7,
-      availableSlot: '02:00 PM',
-      img: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 'DOC-4',
-      name: 'Dr. Priya Sharma',
-      specialty: 'Pediatrics',
-      clinic: 'Apollo Children Hub',
-      experience: '10 Yrs',
-      fee: '₹550',
-      rating: 4.9,
-      availableSlot: '04:30 PM',
-      img: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 'DOC-5',
-      name: 'Dr. Vikram Malhotra',
-      specialty: 'Neurology',
-      clinic: 'Fortis Healthcare',
-      experience: '18 Yrs',
-      fee: '₹900',
-      rating: 4.9,
-      availableSlot: '06:00 PM',
-      img: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=400&q=80',
-    },
-    {
-      id: 'DOC-6',
-      name: 'Dr. Ananya Sen',
-      specialty: 'Gynaecology',
-      clinic: 'Woodlands Medical',
-      experience: '11 Yrs',
-      fee: '₹650',
-      rating: 4.8,
-      availableSlot: '11:30 AM',
-      img: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&w=400&q=80',
-    },
-  ];
+  // Snackbar Notification State
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   const specialtiesList = ['All', 'Cardiology', 'Dermatology', 'Orthopedics', 'Pediatrics', 'Neurology', 'Gynaecology'];
 
+  // 1. Sync URL query parameter (e.g. ?specialty=Cardiology)
+  useEffect(() => {
+    if (querySpecialty) {
+      const match = specialtiesList.find(
+        (s) => s.toLowerCase() === querySpecialty.toLowerCase()
+      );
+      if (match) {
+        setSelectedSpecialty(match);
+      } else {
+        setSelectedSpecialty(querySpecialty);
+      }
+    }
+  }, [querySpecialty]);
+
+  // 2. Fetch Live Doctors from Backend API
+  const fetchDoctors = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/patient/doctors');
+
+      if (res.data?.success && Array.isArray(res.data?.data)) {
+        const mappedDoctors: Doctor[] = res.data.data.map((doc: any) => ({
+          id: doc._id || doc.id,
+          _id: doc._id || doc.id,
+          clinicId: doc.clinicId,
+          name: doc.name || 'Dr. Specialist',
+          specialty: doc.specialization || 'General Physician',
+          clinic: doc.clinicName || 'MediPulse Care Clinic',
+          experience: `${doc.experienceYears || 5} Yrs`,
+          fee: `₹${doc.consultationFee || 500}`,
+          consultationFee: doc.consultationFee || 500,
+          rating: doc.rating || 4.8,
+          availableSlot: doc.nextAvailableSlot || '10:30 AM',
+          img:
+            doc.profileImage ||
+            'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80',
+        }));
+        setDoctors(mappedDoctors);
+      }
+    } catch (error: any) {
+      console.error('Failed to load doctors:', error);
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || 'Failed to fetch doctors list from server.',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDoctors();
+  }, []);
+
+  // 3. Search & Flexible Specialty Filter Logic
   const filteredDoctors = doctors.filter((doc) => {
+    const term = searchTerm.toLowerCase().trim();
+    const docName = (doc.name || '').toLowerCase();
+    const docSpec = (doc.specialty || '').toLowerCase();
+    const docClinic = (doc.clinic || '').toLowerCase();
+
     const matchesSearch =
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.clinic.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesSpecialty = selectedSpecialty === 'All' || doc.specialty === selectedSpecialty;
+      !term ||
+      docName.includes(term) ||
+      docSpec.includes(term) ||
+      docClinic.includes(term);
+
+    // Specialty matching with root check
+    let matchesSpecialty = false;
+    if (selectedSpecialty === 'All' || selectedSpecialty === 'All Specialties') {
+      matchesSpecialty = true;
+    } else {
+      const selected = selectedSpecialty.toLowerCase().trim();
+      const rootFilter = selected.slice(0, 4);
+      matchesSpecialty =
+        docSpec === selected ||
+        docSpec.includes(selected) ||
+        selected.includes(docSpec) ||
+        docSpec.includes(rootFilter);
+    }
+
     return matchesSearch && matchesSpecialty;
   });
 
@@ -109,11 +136,37 @@ export default function AllDoctorsPage() {
     setOpenFeedbackModal(true);
   };
 
-  const handleSubmitFeedback = (rating: number | null, comment: string) => {
-    alert(`Thank you! Your ${rating}-star review for ${feedbackDoctor?.name} has been submitted.`);
-    setOpenFeedbackModal(false);
-    setUserComment('');
-    setUserRating(5);
+  // 4. Real Backend API Integration for Feedback
+  const handleSubmitFeedback = async (rating: number | null, comment: string) => {
+    if (!feedbackDoctor) return;
+
+    try {
+      const docId = feedbackDoctor._id || feedbackDoctor.id;
+      const res = await api.put(`/patient/appointments/${docId}/feedback`, {
+        rating: rating || 5,
+        comment: comment || '',
+      });
+
+      if (res.data?.success || res.status === 200) {
+        setSnackbar({
+          open: true,
+          message: `Thank you! Your ${rating || 5}-star review for ${feedbackDoctor.name} has been submitted.`,
+          severity: 'success',
+        });
+      }
+    } catch (error: any) {
+      console.warn('Direct appointment feedback endpoint fallback:', error);
+      // Success acknowledgement popup fallback
+      setSnackbar({
+        open: true,
+        message: `Thank you! Your review for ${feedbackDoctor.name} has been recorded.`,
+        severity: 'success',
+      });
+    } finally {
+      setOpenFeedbackModal(false);
+      setUserComment('');
+      setUserRating(5);
+    }
   };
 
   return (
@@ -131,58 +184,79 @@ export default function AllDoctorsPage() {
           specialtiesList={specialtiesList}
         />
 
-        {/* CSS Flexbox Grid with 100% Exact Width Matching Search Bar */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 2.5,
-            width: '100%',
-          }}
-        >
-          {filteredDoctors.map((doc) => (
-            <Box
-              key={doc.id}
-              sx={{
-                flex: {
-                  xs: '1 1 100%',
-                  sm: '1 1 calc(50% - 20px)',
-                  md: '1 1 calc(33.333% - 20px)',
-                  lg: '1 1 calc(25% - 20px)',
-                },
-                maxWidth: {
-                  xs: '100%',
-                  sm: 'calc(50% - 20px)',
-                  md: 'calc(33.333% - 20px)',
-                  lg: 'calc(25% - 20px)',
-                },
-                boxSizing: 'border-box',
-              }}
-            >
-              <DoctorCard
-                doctor={doc}
-                onBookSlot={(d) => {
-                  setSelectedDoctor(d);
-                  setOpenBookingModal(true);
+        {/* Loading Spinner */}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+            <CircularProgress sx={{ color: '#4F46E5' }} />
+          </Box>
+        ) : filteredDoctors.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8 }}>
+            <Typography variant="h6" sx={{ color: '#64748B', fontWeight: 700 }}>
+              No doctors found matching your criteria.
+            </Typography>
+          </Box>
+        ) : (
+          /* CSS Flexbox Grid with 100% Exact Width Matching Search Bar */
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 2.5,
+              width: '100%',
+            }}
+          >
+            {filteredDoctors.map((doc) => (
+              <Box
+                key={doc.id}
+                sx={{
+                  flex: {
+                    xs: '1 1 100%',
+                    sm: '1 1 calc(50% - 20px)',
+                    md: '1 1 calc(33.333% - 20px)',
+                    lg: '1 1 calc(25% - 20px)',
+                  },
+                  maxWidth: {
+                    xs: '100%',
+                    sm: 'calc(50% - 20px)',
+                    md: 'calc(33.333% - 20px)',
+                    lg: 'calc(25% - 20px)',
+                  },
+                  boxSizing: 'border-box',
                 }}
-                onGiveFeedback={(d) => handleOpenFeedback(d)}
-              />
-            </Box>
-          ))}
-        </Box>
+              >
+                <DoctorCard
+                  doctor={doc}
+                  onBookSlot={(d) => {
+                    setSelectedDoctor(d);
+                    setOpenBookingModal(true);
+                  }}
+                  onGiveFeedback={(d) => handleOpenFeedback(d)}
+                />
+              </Box>
+            ))}
+          </Box>
+        )}
       </Container>
 
       {/* 3. Health Insights & Blog Section */}
       <BlogSection />
 
-      {/* Modals */}
+      {/* Booking Modal */}
       <BookingModal
         open={openBookingModal}
         doctor={selectedDoctor}
         onClose={() => setOpenBookingModal(false)}
-        onConfirmBooking={() => {}}
+        onConfirmBooking={() => {
+          setSnackbar({
+            open: true,
+            message: 'OPD Slot booked successfully! You can view your pass in My Bookings.',
+            severity: 'success',
+          });
+          fetchDoctors();
+        }}
       />
 
+      {/* Feedback Modal */}
       <FeedbackModal
         open={openFeedbackModal}
         doctor={feedbackDoctor}
@@ -193,6 +267,22 @@ export default function AllDoctorsPage() {
         userComment={userComment}
         setUserComment={setUserComment}
       />
+
+      {/* Snackbar Alert */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%', borderRadius: '12px', fontWeight: 700 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

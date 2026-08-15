@@ -358,7 +358,81 @@
         }
       }
     },
-    "/clinic/add-doctor": {
+    "/super-admin/settings": {
+      "get": {
+        "tags": [
+          "Super Admin"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Super Admin"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "announcement": {
+                    "example": "any"
+                  },
+                  "isMaintenanceMode": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clinic/dashboard": {
+      "get": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/clinic/doctors": {
+      "get": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
       "post": {
         "tags": [
           "Clinic Admin"
@@ -375,9 +449,6 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "clinicId": {
-                    "example": "any"
-                  },
                   "name": {
                     "example": "any"
                   },
@@ -409,7 +480,7 @@
         }
       }
     },
-    "/clinic/doctors/{clinicId}": {
+    "/clinic/appointments": {
       "get": {
         "tags": [
           "Clinic Admin"
@@ -417,9 +488,15 @@
         "description": "",
         "parameters": [
           {
-            "name": "clinicId",
-            "in": "path",
-            "required": true,
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -430,17 +507,63 @@
             "description": "Unauthorized"
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patientId": {
+                    "example": "any"
+                  },
+                  "doctorId": {
+                    "example": "any"
+                  },
+                  "appointmentDate": {
+                    "example": "any"
+                  },
+                  "timeSlot": {
+                    "example": "any"
+                  },
+                  "slotTime": {
+                    "example": "any"
+                  },
+                  "type": {
+                    "example": "any"
+                  },
+                  "notes": {
+                    "example": "any"
+                  },
+                  "status": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     },
-    "/clinic/stats/{clinicId}": {
-      "get": {
+    "/clinic/appointments/{id}/status": {
+      "patch": {
         "tags": [
           "Clinic Admin"
         ],
         "description": "",
         "parameters": [
           {
-            "name": "clinicId",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -451,6 +574,180 @@
         "responses": {
           "401": {
             "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clinic/patients": {
+      "get": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "email": {
+                    "example": "any"
+                  },
+                  "phone": {
+                    "example": "any"
+                  },
+                  "age": {
+                    "example": "any"
+                  },
+                  "gender": {
+                    "example": "any"
+                  },
+                  "bloodGroup": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clinic/invoices": {
+      "get": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "example": "any"
+                  },
+                  "timeSlot": {
+                    "example": "any"
+                  },
+                  "patientName": {
+                    "example": "any"
+                  },
+                  "patientId": {
+                    "example": "any"
+                  },
+                  "doctorId": {
+                    "example": "any"
+                  },
+                  "amount": {
+                    "example": "any"
+                  },
+                  "paymentMethod": {
+                    "example": "any"
+                  },
+                  "status": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/clinic/settings": {
+      "get": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Clinic Admin"
+        ],
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
           }
         }
       }
@@ -524,6 +821,360 @@
         "responses": {
           "401": {
             "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/doctor/dashboard": {
+      "get": {
+        "tags": [
+          "Doctor Portal"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/doctor/queue/{appointmentId}/status": {
+      "put": {
+        "tags": [
+          "Doctor Portal"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "appointmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/doctor/schedule": {
+      "get": {
+        "tags": [
+          "Doctor Portal"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Doctor Portal"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "availableDays": {
+                    "example": "any"
+                  },
+                  "consultationFee": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/doctor/feedback": {
+      "get": {
+        "tags": [
+          "Doctor Portal"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/doctor/appointments/{appointmentId}/prescription": {
+      "put": {
+        "tags": [
+          "Doctor Portal"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "appointmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "diagnosis": {
+                    "example": "any"
+                  },
+                  "medicines": {
+                    "example": "any"
+                  },
+                  "advice": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient/doctors": {
+      "get": {
+        "tags": [
+          "Patient Portal"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "specialty",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/patient/contact": {
+      "post": {
+        "tags": [
+          "Patient Portal"
+        ],
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "example": "any"
+                  },
+                  "phone": {
+                    "example": "any"
+                  },
+                  "message": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient/appointments": {
+      "post": {
+        "tags": [
+          "Patient Portal"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patientId": {
+                    "example": "any"
+                  },
+                  "doctorId": {
+                    "example": "any"
+                  },
+                  "clinicId": {
+                    "example": "any"
+                  },
+                  "appointmentDate": {
+                    "example": "any"
+                  },
+                  "slotTime": {
+                    "example": "any"
+                  },
+                  "timeSlot": {
+                    "example": "any"
+                  },
+                  "type": {
+                    "example": "any"
+                  },
+                  "notes": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Patient Portal"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/patient/appointments/{id}/feedback": {
+      "put": {
+        "tags": [
+          "Patient Portal"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patientId": {
+                    "example": "any"
+                  },
+                  "rating": {
+                    "example": "any"
+                  },
+                  "comment": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient/doctors/{id}/feedback": {
+      "post": {
+        "tags": [
+          "Patient Portal"
+        ],
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patientId": {
+                    "example": "any"
+                  },
+                  "rating": {
+                    "example": "any"
+                  },
+                  "comment": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
           }
         }
       }

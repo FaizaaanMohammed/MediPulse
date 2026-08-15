@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -10,6 +10,7 @@ import {
   Rating,
   TextField,
   Button,
+  CircularProgress,
 } from '@mui/material';
 import { StarBorderOutlined } from '@mui/icons-material';
 import { Doctor } from './DoctorCard';
@@ -18,7 +19,7 @@ interface FeedbackModalProps {
   open: boolean;
   doctor: Doctor | null;
   onClose: () => void;
-  onSubmit: (rating: number | null, comment: string) => void;
+  onSubmit: (rating: number | null, comment: string) => Promise<void> | void;
   userRating: number | null;
   setUserRating: (val: number | null) => void;
   userComment: string;
@@ -35,6 +36,17 @@ export default function FeedbackModal({
   userComment,
   setUserComment,
 }: FeedbackModalProps) {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      await onSubmit(userRating, userComment);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -71,13 +83,19 @@ export default function FeedbackModal({
         />
       </DialogContent>
       <DialogActions sx={{ p: 2.5, pt: 0 }}>
-        <Button onClick={onClose} sx={{ color: '#64748B', fontWeight: 700, textTransform: 'none' }}>
+        <Button
+          onClick={onClose}
+          disabled={submitting}
+          sx={{ color: '#64748B', fontWeight: 700, textTransform: 'none' }}
+        >
           Cancel
         </Button>
         <Button
           variant="contained"
           disableElevation
-          onClick={() => onSubmit(userRating, userComment)}
+          disabled={submitting}
+          onClick={handleSubmit}
+          startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : null}
           sx={{
             bgcolor: '#4F46E5',
             '&:hover': { bgcolor: '#4338CA' },
@@ -87,7 +105,7 @@ export default function FeedbackModal({
             textTransform: 'none',
           }}
         >
-          Submit Rating
+          {submitting ? 'Submitting...' : 'Submit Rating'}
         </Button>
       </DialogActions>
     </Dialog>

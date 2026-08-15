@@ -1,9 +1,76 @@
 'use client';
-import React from 'react';
-import { Paper, Box, Typography, TextField, Button, Stack, Container } from '@mui/material';
+import React, { useState } from 'react';
+import {
+  Paper,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Stack,
+  Container,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from '@mui/material';
 import { MailOutlined, PhoneOutlined, LocationOnOutlined, SendOutlined } from '@mui/icons-material';
+import api from '@/lib/api/axios';
 
 export default function ContactSection() {
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    message: '',
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.name.trim() || !formData.phone.trim() || !formData.message.trim()) {
+      setSnackbar({
+        open: true,
+        message: 'Please fill in all fields (Name, Phone, Message).',
+        severity: 'error',
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await api.post('/patient/contact', formData);
+
+      if (res.data?.success || res.status === 201) {
+        setSnackbar({
+          open: true,
+          message: 'Message sent to healthcare support team! We will reply within 15 minutes.',
+          severity: 'success',
+        });
+        setFormData({ name: '', phone: '', message: '' });
+      }
+    } catch (err: any) {
+      console.error('Contact submit error:', err);
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || 'Failed to submit inquiry. Please try again.',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -161,6 +228,8 @@ export default function ContactSection() {
                     fullWidth
                     placeholder="Your Full Name"
                     variant="outlined"
+                    value={formData.name}
+                    onChange={handleChange('name')}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         bgcolor: '#F8FAFC',
@@ -175,6 +244,8 @@ export default function ContactSection() {
                     fullWidth
                     placeholder="Phone Number"
                     variant="outlined"
+                    value={formData.phone}
+                    onChange={handleChange('phone')}
                     sx={{
                       '& .MuiOutlinedInput-root': {
                         bgcolor: '#F8FAFC',
@@ -193,6 +264,8 @@ export default function ContactSection() {
                   rows={4}
                   placeholder="How can we assist you today?"
                   variant="outlined"
+                  value={formData.message}
+                  onChange={handleChange('message')}
                   sx={{
                     '& .MuiOutlinedInput-root': {
                       bgcolor: '#F8FAFC',
@@ -206,8 +279,9 @@ export default function ContactSection() {
                 <Button
                   variant="contained"
                   disableElevation
-                  onClick={() => alert('Message sent to healthcare support team!')}
-                  startIcon={<SendOutlined />}
+                  disabled={loading}
+                  onClick={handleSubmit}
+                  startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <SendOutlined />}
                   sx={{
                     bgcolor: '#4F46E5',
                     '&:hover': { bgcolor: '#4338CA' },
@@ -219,13 +293,29 @@ export default function ContactSection() {
                     boxShadow: '0 10px 25px rgba(79, 70, 229, 0.25)',
                   }}
                 >
-                  Submit Inquiry
+                  {loading ? 'Submitting...' : 'Submit Inquiry'}
                 </Button>
               </Stack>
             </Paper>
           </Box>
         </Box>
       </Container>
+
+      {/* Floating Material-UI Snackbar Alert */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%', borderRadius: '14px', fontWeight: 700 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

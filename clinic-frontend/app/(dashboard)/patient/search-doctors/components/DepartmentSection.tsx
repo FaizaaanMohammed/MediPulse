@@ -2,6 +2,7 @@
 import React from 'react';
 import { Box, Typography, Chip, Container, Paper, Button } from '@mui/material';
 import { ArrowForwardOutlined } from '@mui/icons-material';
+import Link from 'next/link';
 
 export default function DepartmentSection() {
   const departments = [
@@ -116,7 +117,11 @@ export default function DepartmentSection() {
                     {dept.desc}
                   </Typography>
                 </Box>
+
+                {/* Direct Link to Specialty in Search Page */}
                 <Button
+                  component={Link}
+                  href={`/patient/search-doctors/all?specialty=${encodeURIComponent(dept.title)}`}
                   variant="text"
                   endIcon={<ArrowForwardOutlined sx={{ fontSize: 16 }} />}
                   sx={{

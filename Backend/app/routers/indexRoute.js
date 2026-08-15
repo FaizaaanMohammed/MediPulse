@@ -13,7 +13,7 @@ router.use('/auth', authRoute);
 router.use('/super-admin', superAdminRoute);
 router.use('/clinic', clinicRoute);
 router.use('/subscription', subscriptionRoute);
-// router.use('/doctor', doctorRoute);
-// router.use('/patient', patientRoute);
+router.use('/doctor', doctorRoute);
+router.use('/patient', patientRoute);
 
 module.exports = router;

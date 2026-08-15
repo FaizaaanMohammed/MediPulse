@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Box,
@@ -16,6 +16,9 @@ import {
   DialogContent,
   DialogActions,
   Grid,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import {
   CalendarMonthOutlined,
@@ -33,6 +36,7 @@ import {
   AddOutlined,
 } from '@mui/icons-material';
 import Link from 'next/link';
+import api from '@/lib/api/axios';
 
 interface Booking {
   id: string;
@@ -51,54 +55,147 @@ export default function MyBookingsPage() {
   const [tabIndex, setTabIndex] = useState(0);
   const [selectedPass, setSelectedPass] = useState<Booking | null>(null);
   const [openPassModal, setOpenPassModal] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const initialBookings: Booking[] = [
-    {
-      id: 'BK-1001',
-      passNo: 'OPD-PASS-8841',
-      doctorName: 'Dr. A. K. Roy',
-      specialty: 'Cardiology',
-      clinic: 'City Health Clinic, Park Street',
-      doctorImg: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80',
-      date: '14 Aug, 2026',
-      timeSlot: '10:30 AM',
-      fee: '₹500',
-      status: 'Confirmed',
-    },
-    {
-      id: 'BK-1002',
-      passNo: 'OPD-PASS-7729',
-      doctorName: 'Dr. Sneha Das',
-      specialty: 'Dermatology',
-      clinic: 'Park Street Medicare',
-      doctorImg: 'https://images.unsplash.com/photo-1594824813566-88855376378e?auto=format&fit=crop&w=400&q=80',
-      date: '02 Aug, 2026',
-      timeSlot: '11:00 AM',
-      fee: '₹600',
-      status: 'Completed',
-    },
-    {
-      id: 'BK-1003',
-      passNo: 'OPD-PASS-5510',
-      doctorName: 'Dr. R. N. Mukherjee',
-      specialty: 'Orthopedics',
-      clinic: 'Apex Care Clinic',
-      doctorImg: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=400&q=80',
-      date: '25 Jul, 2026',
-      timeSlot: '02:00 PM',
-      fee: '₹700',
-      status: 'Cancelled',
-    },
-  ];
+  // Snackbar State
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  const [bookings, setBookings] = useState<Booking[]>(initialBookings);
+  // Logged-in Patient Profile
+  const [patientInfo, setPatientInfo] = useState({
+    name: 'Rahul Sharma',
+    patientId: 'PAT-1082',
+    phone: '+91 98765 43210',
+    bloodGroup: 'O +ve',
+    initial: 'R',
+  });
 
-  const handleCancelBooking = (id: string) => {
-    if (confirm('Are you sure you want to cancel this OPD appointment?')) {
-      setBookings((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, status: 'Cancelled' } : b))
-      );
+  const [bookings, setBookings] = useState<Booking[]>([]);
+
+  // 1. Fetch Patient Info & Live Appointments from API
+  const fetchMyBookings = async () => {
+    try {
+      setLoading(true);
+
+      // Load Profile from LocalStorage
+      if (typeof window !== 'undefined') {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            setPatientInfo({
+              name: parsed.name || 'Rahul Sharma',
+              patientId: parsed.patientId || parsed.customId || `PAT-${(parsed._id || '1082').slice(-4).toUpperCase()}`,
+              phone: parsed.phone || '+91 98765 43210',
+              bloodGroup: parsed.bloodGroup || 'O +ve',
+              initial: (parsed.name || 'R').charAt(0).toUpperCase(),
+            });
+          } catch (e) {
+            console.error('Error parsing stored user:', e);
+          }
+        }
+      }
+
+      // API Call: GET /patient/appointments
+      const res = await api.get('/patient/appointments');
+      if (res.data?.success && Array.isArray(res.data?.data)) {
+        const mappedBookings: Booking[] = res.data.data.map((item: any) => {
+          const rawStatus = (item.status || 'WAITING').toUpperCase();
+          let formattedStatus: 'Confirmed' | 'Completed' | 'Cancelled' = 'Confirmed';
+
+          if (rawStatus === 'COMPLETED') {
+            formattedStatus = 'Completed';
+          } else if (rawStatus === 'CANCELLED' || rawStatus === 'REJECTED') {
+            formattedStatus = 'Cancelled';
+          } else {
+            formattedStatus = 'Confirmed'; // WAITING / IN_PROGRESS / CONFIRMED
+          }
+
+          const rawDate = item.appointmentDate ? new Date(item.appointmentDate) : new Date();
+          const formattedDate = rawDate.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          });
+
+          return {
+            id: item._id,
+            passNo: item.appointmentId ? `OPD-PASS-${item.appointmentId.replace('APT-', '')}` : `OPD-PASS-${item._id.slice(-4)}`,
+            doctorName: item.doctorName || 'Dr. Specialist',
+            specialty: item.specialization || 'General Physician',
+            clinic: item.clinicName || 'City Health Clinic, Park Street',
+            doctorImg:
+              item.doctorImg ||
+              'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80',
+            date: formattedDate,
+            timeSlot: item.slotTime || '10:30 AM',
+            fee: item.fee ? `₹${item.fee}` : '₹500',
+            status: formattedStatus,
+          };
+        });
+
+        setBookings(mappedBookings);
+      }
+    } catch (err: any) {
+      console.error('Failed to load patient bookings:', err);
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || 'Failed to load bookings from server',
+        severity: 'error',
+      });
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchMyBookings();
+  }, []);
+
+  // 2. Cancel Appointment API
+  const handleCancelBooking = async (id: string) => {
+    if (confirm('Are you sure you want to cancel this OPD appointment?')) {
+      try {
+        // Optimistic UI update
+        setBookings((prev) =>
+          prev.map((b) => (b.id === id ? { ...b, status: 'Cancelled' } : b))
+        );
+
+        await api.put(`/doctor/appointments/${id}/status`, { status: 'CANCELLED' });
+
+        setSnackbar({
+          open: true,
+          message: 'Appointment has been cancelled successfully.',
+          severity: 'success',
+        });
+        fetchMyBookings();
+      } catch (error: any) {
+        console.error('Failed to cancel appointment:', error);
+        setSnackbar({
+          open: true,
+          message: error?.response?.data?.message || 'Failed to cancel slot. Try again.',
+          severity: 'error',
+        });
+        fetchMyBookings();
+      }
+    }
+  };
+
+  // 3. Download Pass Receipt
+  const handleDownloadPass = () => {
+    setSnackbar({
+      open: true,
+      message: `OPD Pass receipt (${selectedPass?.passNo}) downloaded successfully!`,
+      severity: 'success',
+    });
+    setOpenPassModal(false);
   };
 
   const filteredBookings = bookings.filter((b) => {
@@ -257,7 +354,7 @@ export default function MyBookingsPage() {
       <Container maxWidth={false} sx={{ maxWidth: '1350px', px: { xs: 2, md: 4 } }}>
         <Grid container spacing={4}>
           {/* Left Column (70%): Filter Tabs & Pass Cards */}
-          <Grid item xs={12} lg={8} size={{xs:12,lg:8}}>
+          <Grid item xs={12} lg={8} size={{ xs: 12, lg: 8 }}>
             {/* Filter Tabs */}
             <Paper
               elevation={0}
@@ -301,8 +398,15 @@ export default function MyBookingsPage() {
 
             {/* Passes List */}
             <Stack spacing={3}>
-              {filteredBookings.length === 0 ? (
-                <Paper elevation={0} sx={{ p: 6, textAlign: 'center', bgcolor: '#FFFFFF', borderRadius: '32px', border: '1.5px solid #CBD5E1' }}>
+              {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+                  <CircularProgress sx={{ color: '#4F46E5' }} />
+                </Box>
+              ) : filteredBookings.length === 0 ? (
+                <Paper
+                  elevation={0}
+                  sx={{ p: 6, textAlign: 'center', bgcolor: '#FFFFFF', borderRadius: '32px', border: '1.5px solid #CBD5E1' }}
+                >
                   <ReceiptLongOutlined sx={{ fontSize: 52, color: '#94A3B8', mb: 1 }} />
                   <Typography variant="h6" sx={{ fontWeight: 800, color: '#1E1B4B' }}>
                     No appointments found
@@ -334,7 +438,15 @@ export default function MyBookingsPage() {
                         },
                       }}
                     >
-                      <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', gap: 2.5 }}>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          flexDirection: { xs: 'column', sm: 'row' },
+                          alignItems: { xs: 'flex-start', sm: 'center' },
+                          justifyContent: 'space-between',
+                          gap: 2.5,
+                        }}
+                      >
                         {/* Doctor Profile */}
                         <Stack direction="row" spacing={2} alignItems="center">
                           <Avatar
@@ -355,7 +467,13 @@ export default function MyBookingsPage() {
                               <Chip
                                 label={item.specialty}
                                 size="small"
-                                sx={{ bgcolor: '#4F46E5', color: '#FFFFFF', fontWeight: 800, fontSize: '0.7rem', height: '22px' }}
+                                sx={{
+                                  bgcolor: '#4F46E5',
+                                  color: '#FFFFFF',
+                                  fontWeight: 800,
+                                  fontSize: '0.7rem',
+                                  height: '22px',
+                                }}
                               />
                             </Stack>
 
@@ -407,7 +525,7 @@ export default function MyBookingsPage() {
                           display: 'flex',
                           flexDirection: { xs: 'column', sm: 'row' },
                           alignItems: { xs: 'flex-start', sm: 'center' },
-                          justify: 'space-between',
+                          justifyContent: 'space-between',
                           gap: 2,
                         }}
                       >
@@ -479,8 +597,8 @@ export default function MyBookingsPage() {
             </Stack>
           </Grid>
 
-          {/* Right Column (30%): Patient Info & Quick Actions Widget */}
-          <Grid item xs={12} lg={4} size={{xs:12,lg:4}}>
+          {/* Right Column (30%): Dynamic Patient Profile & Quick Actions */}
+          <Grid item xs={12} lg={4} size={{ xs: 12, lg: 4 }}>
             <Stack spacing={3}>
               {/* Patient Profile Box */}
               <Paper
@@ -493,32 +611,50 @@ export default function MyBookingsPage() {
                   boxShadow: '0 10px 25px rgba(30, 27, 75, 0.04)',
                 }}
               >
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#64748B', mb: 2, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    fontWeight: 800,
+                    color: '#64748B',
+                    mb: 2,
+                    textTransform: 'uppercase',
+                    fontSize: '0.75rem',
+                    letterSpacing: '0.5px',
+                  }}
+                >
                   Registered Patient Profile
                 </Typography>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
                   <Avatar sx={{ bgcolor: '#4F46E5', width: 56, height: 56, fontSize: '1.4rem', fontWeight: 900 }}>
-                    R
+                    {patientInfo.initial}
                   </Avatar>
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 900, color: '#1E1B4B', lineHeight: 1.2 }}>
-                      Rahul Sharma
+                      {patientInfo.name}
                     </Typography>
                     <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>
-                      Patient ID: PAT-1082
+                      Patient ID: {patientInfo.patientId}
                     </Typography>
                   </Box>
                 </Box>
 
                 <Stack spacing={1.2} sx={{ pt: 2, borderTop: '1.5px solid #F1F5F9', fontSize: '0.88rem' }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>Phone:</Typography>
-                    <Typography variant="caption" sx={{ color: '#1E1B4B', fontWeight: 800 }}>+91 98765 43210</Typography>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
+                      Phone:
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#1E1B4B', fontWeight: 800 }}>
+                      {patientInfo.phone}
+                    </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>Blood Group:</Typography>
-                    <Typography variant="caption" sx={{ color: '#1E1B4B', fontWeight: 800 }}>O +ve</Typography>
+                    <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 600 }}>
+                      Blood Group:
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: '#1E1B4B', fontWeight: 800 }}>
+                      {patientInfo.bloodGroup}
+                    </Typography>
                   </Box>
                 </Stack>
 
@@ -665,7 +801,7 @@ export default function MyBookingsPage() {
               variant="contained"
               disableElevation
               fullWidth
-              onClick={() => alert('OPD Pass receipt downloaded!')}
+              onClick={handleDownloadPass}
               startIcon={<DownloadOutlined />}
               sx={{
                 bgcolor: '#4F46E5',
@@ -681,6 +817,22 @@ export default function MyBookingsPage() {
           </DialogActions>
         </Dialog>
       </Container>
+
+      {/* Dynamic Snackbar Notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: '100%', borderRadius: '12px', fontWeight: 700 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

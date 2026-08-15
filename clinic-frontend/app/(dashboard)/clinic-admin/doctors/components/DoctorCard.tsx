@@ -25,14 +25,14 @@ import {
 } from '@mui/icons-material';
 
 interface DoctorCardProps {
-  id: number;
+  id: string | number;
   name: string;
   specialty: string;
   email: string;
   phone: string;
-  fee: string;
-  status: 'Active' | 'On Leave';
-  experience: string;
+  fee: string | number;
+  status: 'Active' | 'On Leave' | string;
+  experience: string | number;
   timing?: string;
   onEdit: () => void;
   onToggleStatus: () => void;
@@ -63,6 +63,8 @@ export default function DoctorCard({
     setAnchorEl(null);
   };
 
+  const isActive = status === 'Active' || status === 'ACTIVE';
+
   return (
     <Card
       sx={{
@@ -86,14 +88,14 @@ export default function DoctorCard({
                 fontSize: '1.1rem',
               }}
             >
-              {name.replace('Dr. ', '').charAt(0)}
+              {(name || 'D').replace('Dr. ', '').charAt(0).toUpperCase()}
             </Avatar>
             <Box>
               <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#FFFFFF', lineHeight: 1.2 }}>
-                {name}
+                {name?.startsWith('Dr.') ? name : `Dr. ${name || 'Doctor'}`}
               </Typography>
               <Typography variant="caption" sx={{ color: '#83C5BE', fontWeight: 600 }}>
-                {specialty} • {experience} exp
+                {specialty} • {typeof experience === 'number' ? `${experience} yrs` : experience} exp
               </Typography>
             </Box>
           </Box>
@@ -117,17 +119,46 @@ export default function DoctorCard({
               },
             }}
           >
-            <MenuItem onClick={() => { handleMenuClose(); onEdit(); }}>
-              <ListItemIcon><EditOutlined fontSize="small" sx={{ color: '#83C5BE' }} /></ListItemIcon>
+            <MenuItem
+              onClick={() => {
+                handleMenuClose();
+                onEdit();
+              }}
+            >
+              <ListItemIcon>
+                <EditOutlined fontSize="small" sx={{ color: '#83C5BE' }} />
+              </ListItemIcon>
               <ListItemText primary="Edit Details" primaryTypographyProps={{ fontSize: '0.85rem' }} />
             </MenuItem>
-            <MenuItem onClick={() => { handleMenuClose(); onToggleStatus(); }}>
-              <ListItemIcon><SyncAltOutlined fontSize="small" sx={{ color: '#FBBF24' }} /></ListItemIcon>
-              <ListItemText primary={`Set as ${status === 'Active' ? 'On Leave' : 'Active'}`} primaryTypographyProps={{ fontSize: '0.85rem' }} />
+
+            <MenuItem
+              onClick={() => {
+                handleMenuClose();
+                onToggleStatus();
+              }}
+            >
+              <ListItemIcon>
+                <SyncAltOutlined fontSize="small" sx={{ color: '#FBBF24' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={`Set as ${isActive ? 'On Leave' : 'Active'}`}
+                primaryTypographyProps={{ fontSize: '0.85rem' }}
+              />
             </MenuItem>
-            <MenuItem onClick={() => { handleMenuClose(); onDelete(); }}>
-              <ListItemIcon><DeleteOutlined fontSize="small" sx={{ color: '#F87171' }} /></ListItemIcon>
-              <ListItemText primary="Delete" primaryTypographyProps={{ fontSize: '0.85rem', color: '#F87171' }} />
+
+            <MenuItem
+              onClick={() => {
+                handleMenuClose();
+                onDelete();
+              }}
+            >
+              <ListItemIcon>
+                <DeleteOutlined fontSize="small" sx={{ color: '#F87171' }} />
+              </ListItemIcon>
+              <ListItemText
+                primary="Delete"
+                primaryTypographyProps={{ fontSize: '0.85rem', color: '#F87171' }}
+              />
             </MenuItem>
           </Menu>
         </Box>
@@ -136,15 +167,21 @@ export default function DoctorCard({
         <Stack spacing={1} sx={{ my: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <EmailOutlined sx={{ fontSize: 16, color: '#83C5BE' }} />
-            <Typography variant="caption" sx={{ color: '#CBD5E1' }}>{email}</Typography>
+            <Typography variant="caption" sx={{ color: '#CBD5E1' }}>
+              {email || 'N/A'}
+            </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <PhoneOutlined sx={{ fontSize: 16, color: '#83C5BE' }} />
-            <Typography variant="caption" sx={{ color: '#CBD5E1' }}>{phone}</Typography>
+            <Typography variant="caption" sx={{ color: '#CBD5E1' }}>
+              {phone || 'N/A'}
+            </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AccessTimeOutlined sx={{ fontSize: 16, color: '#83C5BE' }} />
-            <Typography variant="caption" sx={{ color: '#CBD5E1' }}>{timing}</Typography>
+            <Typography variant="caption" sx={{ color: '#CBD5E1' }}>
+              {timing}
+            </Typography>
           </Box>
         </Stack>
 
@@ -154,7 +191,7 @@ export default function DoctorCard({
             pt: 2,
             borderTop: '1px solid #334155',
             display: 'flex',
-            justify: 'space-between',
+            justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
@@ -163,16 +200,16 @@ export default function DoctorCard({
               Fee
             </Typography>
             <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#FFFFFF' }}>
-              {fee}
+              {typeof fee === 'number' ? `₹${fee}` : fee}
             </Typography>
           </Box>
 
           <Chip
-            label={status}
+            label={isActive ? 'Active' : 'On Leave'}
             size="small"
             sx={{
-              bgcolor: status === 'Active' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-              color: status === 'Active' ? '#4ADE80' : '#F87171',
+              bgcolor: isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+              color: isActive ? '#4ADE80' : '#F87171',
               fontWeight: 700,
               fontSize: '0.75rem',
             }}

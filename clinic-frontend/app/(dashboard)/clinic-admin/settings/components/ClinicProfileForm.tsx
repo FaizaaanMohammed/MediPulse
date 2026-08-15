@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Paper,
   Typography,
@@ -9,16 +9,34 @@ import {
   Box,
   Divider,
   Grid,
+  CircularProgress,
+  Alert,
+  Snackbar,
 } from '@mui/material';
 import { SaveOutlined } from '@mui/icons-material';
+import api from '@/lib/api/axios';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 
 export default function ClinicProfileForm() {
-  const [clinicName, setClinicName] = useState('City Health Clinic');
-  const [phone, setPhone] = useState('+91 98765 43210');
-  const [email, setEmail] = useState('contact@cityhealthclinic.com');
-  const [address, setAddress] = useState('12/A Park Street, Kolkata, WB');
+  const [clinicName, setClinicName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [address, setAddress] = useState('');
   const [openingTime, setOpeningTime] = useState('09:00 AM');
   const [closingTime, setClosingTime] = useState('08:00 PM');
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
   const inputStyle = {
     color: '#FFFFFF',
@@ -26,11 +44,87 @@ export default function ClinicProfileForm() {
     borderRadius: '12px',
     '& fieldset': { borderColor: '#334155' },
     '&:hover fieldset': { borderColor: '#83C5BE' },
+    '&.Mui-focused fieldset': { borderColor: '#83C5BE' },
   };
 
-  const handleSave = () => {
-    alert('Clinic details updated successfully!');
+  // 1. Fetch Clinic Settings (GET /clinic/settings)
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const url = API_ENDPOINTS?.CLINIC?.SETTINGS || '/clinic/settings';
+        const res = await api.get(url);
+
+        if (res.data?.success && res.data?.data) {
+          const data = res.data.data;
+          setClinicName(data.name || data.clinicName || '');
+          setPhone(data.phone || data.contactNumber || '');
+          setEmail(data.email || '');
+          setAddress(data.address || '');
+          setOpeningTime(data.openingTime || '09:00 AM');
+          setClosingTime(data.closingTime || '08:00 PM');
+        }
+      } catch (err: any) {
+        console.error('Fetch Settings Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  // 2. Save Settings (PATCH /clinic/settings)
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const url = API_ENDPOINTS?.CLINIC?.SETTINGS || '/clinic/settings';
+      const payload = {
+        name: clinicName,
+        phone,
+        email,
+        address,
+        openingTime,
+        closingTime,
+      };
+
+      const res = await api.put(url, payload);
+
+      if (res.data?.success || res.status === 200) {
+        setSnackbar({
+          open: true,
+          message: 'Clinic details updated successfully!',
+          severity: 'success',
+        });
+      }
+    } catch (err: any) {
+      console.error('Update Settings Error:', err);
+      setSnackbar({
+        open: true,
+        message: err?.response?.data?.message || 'Failed to update clinic details',
+        severity: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Paper
+        sx={{
+          bgcolor: '#1E293B',
+          border: '1px solid #334155',
+          borderRadius: '20px',
+          p: 6,
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <CircularProgress sx={{ color: '#83C5BE' }} />
+      </Paper>
+    );
+  }
 
   return (
     <Paper sx={{ bgcolor: '#1E293B', border: '1px solid #334155', borderRadius: '20px', p: { xs: 2.5, sm: 3.5 } }}>
@@ -45,7 +139,7 @@ export default function ClinicProfileForm() {
 
       <Stack spacing={3}>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} size={{sm:6,xs:12}}>
+          <Grid item xs={12} sm={6} size={{ sm: 6, xs: 12 }}>
             <TextField
               fullWidth
               label="Clinic Name"
@@ -57,7 +151,7 @@ export default function ClinicProfileForm() {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} size={{sm:6,xs:12}}>
+          <Grid item xs={12} sm={6} size={{ sm: 6, xs: 12 }}>
             <TextField
               fullWidth
               label="Contact Phone"
@@ -72,7 +166,7 @@ export default function ClinicProfileForm() {
         </Grid>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} size={{sm:6,xs:12}}>
+          <Grid item xs={12} sm={6} size={{ sm: 6, xs: 12 }}>
             <TextField
               fullWidth
               label="Support Email"
@@ -84,7 +178,7 @@ export default function ClinicProfileForm() {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} size={{sm:6,xs:12}}>
+          <Grid item xs={12} sm={6} size={{ sm: 6, xs: 12 }}>
             <TextField
               fullWidth
               label="Address"
@@ -99,7 +193,7 @@ export default function ClinicProfileForm() {
         </Grid>
 
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} size={{sm:6,xs:12}}>
+          <Grid item xs={12} sm={6} size={{ sm: 6, xs: 12 }}>
             <TextField
               fullWidth
               label="Opening Time"
@@ -111,7 +205,7 @@ export default function ClinicProfileForm() {
               }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} size={{sm:6,xs:12}}>
+          <Grid item xs={12} sm={6} size={{ sm: 6, xs: 12 }}>
             <TextField
               fullWidth
               label="Closing Time"
@@ -130,13 +224,37 @@ export default function ClinicProfileForm() {
             variant="contained"
             disableElevation
             onClick={handleSave}
+            disabled={saving}
             startIcon={<SaveOutlined />}
-            sx={{ bgcolor: '#006D77', '&:hover': { bgcolor: '#004D54' }, fontWeight: 700, px: 3, borderRadius: '10px' }}
+            sx={{
+              bgcolor: '#006D77',
+              '&:hover': { bgcolor: '#004D54' },
+              fontWeight: 700,
+              px: 3,
+              borderRadius: '10px',
+            }}
           >
-            Save Changes
+            {saving ? <CircularProgress size={22} sx={{ color: '#FFFFFF' }} /> : 'Save Changes'}
           </Button>
         </Box>
       </Stack>
+
+      {/* Alert Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3500}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%', borderRadius: '10px' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Paper>
   );
 }

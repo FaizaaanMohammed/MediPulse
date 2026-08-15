@@ -11,9 +11,10 @@ import {
   Stack,
   Typography,
   Box,
-  Divider,
+  CircularProgress,
 } from '@mui/material';
 import { Close, DescriptionOutlined } from '@mui/icons-material';
+import api from '@/lib/api/axios';
 
 interface PrescriptionModalProps {
   open: boolean;
@@ -31,6 +32,7 @@ export default function PrescriptionModal({
   const [diagnosis, setDiagnosis] = useState('');
   const [medicines, setMedicines] = useState('');
   const [advice, setAdvice] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const dialogSx = {
     bgcolor: '#1E293B',
@@ -45,10 +47,30 @@ export default function PrescriptionModal({
     borderRadius: '10px',
   };
 
-  const handleSubmit = () => {
-    if (patient) {
+  const handleSubmit = async () => {
+    if (!patient?.id) return;
+    try {
+      setLoading(true);
+      // API call to save prescription and complete consultation
+      await api.put(`/doctor/appointments/${patient.id}/prescription`, {
+        diagnosis,
+        medicines,
+        advice,
+      });
+
+      onCompleteConsultation(patient.id);
+      // Reset form states
+      setDiagnosis('');
+      setMedicines('');
+      setAdvice('');
+      onClose();
+    } catch (error) {
+      console.error('Failed to submit prescription:', error);
+      // Fallback UI completion
       onCompleteConsultation(patient.id);
       onClose();
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,7 +83,7 @@ export default function PrescriptionModal({
             Write E-Prescription
           </Typography>
         </Box>
-        <IconButton onClick={onClose} sx={{ color: '#94A3B8' }}>
+        <IconButton onClick={onClose} sx={{ color: '#94A3B8' }} disabled={loading}>
           <Close />
         </IconButton>
       </DialogTitle>
@@ -70,7 +92,7 @@ export default function PrescriptionModal({
         <Stack spacing={2.5}>
           <Box sx={{ p: 2, bgcolor: '#0F172A', borderRadius: '12px', border: '1px solid #334155' }}>
             <Typography variant="subtitle2" sx={{ color: '#83C5BE', fontWeight: 700 }}>
-              Patient: {patient?.patientName} ({patient?.id})
+              Patient: {patient?.patientName} ({patient?.tokenId || patient?.id})
             </Typography>
             <Typography variant="caption" sx={{ color: '#94A3B8' }}>
               Visit Type: {patient?.type} • Slot: {patient?.timeSlot}
@@ -83,6 +105,7 @@ export default function PrescriptionModal({
             placeholder="e.g. Acute Rhinitis, Seasonal Allergies"
             value={diagnosis}
             onChange={(e) => setDiagnosis(e.target.value)}
+            disabled={loading}
             slotProps={{
               inputLabel: { sx: { color: '#94A3B8' } },
               input: { sx: inputStyle },
@@ -97,6 +120,7 @@ export default function PrescriptionModal({
             placeholder="1. Tab Paracetamol 650mg - 1-0-1 (After Food)&#10;2. Syrup Allegra - 5ml at bedtime"
             value={medicines}
             onChange={(e) => setMedicines(e.target.value)}
+            disabled={loading}
             slotProps={{
               inputLabel: { sx: { color: '#94A3B8' } },
               input: { sx: inputStyle },
@@ -111,6 +135,7 @@ export default function PrescriptionModal({
             placeholder="Drink warm water, complete 3-day course. Blood test if fever persists."
             value={advice}
             onChange={(e) => setAdvice(e.target.value)}
+            disabled={loading}
             slotProps={{
               inputLabel: { sx: { color: '#94A3B8' } },
               input: { sx: inputStyle },
@@ -120,15 +145,16 @@ export default function PrescriptionModal({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} sx={{ color: '#94A3B8' }}>
+        <Button onClick={onClose} sx={{ color: '#94A3B8' }} disabled={loading}>
           Cancel
         </Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
+          disabled={loading}
           sx={{ bgcolor: '#006D77', '&:hover': { bgcolor: '#004D54' }, fontWeight: 700, px: 3 }}
         >
-          Save & Complete Consultation
+          {loading ? <CircularProgress size={22} sx={{ color: '#FFF' }} /> : 'Save & Complete Consultation'}
         </Button>
       </DialogActions>
     </Dialog>

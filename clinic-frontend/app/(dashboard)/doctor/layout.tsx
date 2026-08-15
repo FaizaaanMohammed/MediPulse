@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Drawer,
@@ -25,7 +25,7 @@ import {
   NotificationsNoneOutlined,
 } from '@mui/icons-material';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 const DRAWER_WIDTH = 260;
 const HEADER_HEIGHT = 65;
@@ -38,9 +38,49 @@ const menuItems = [
 
 export default function DoctorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Dynamic doctor info state
+  const [doctorName, setDoctorName] = useState('Dr. A. K. Roy');
+  const [doctorInitials, setDoctorInitials] = useState('DR');
+
+  useEffect(() => {
+    // 1. Get logged in doctor details from localStorage / session
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          const name = parsed.name || parsed.doctorName || 'Dr. A. K. Roy';
+          setDoctorName(name.startsWith('Dr.') ? name : `Dr. ${name}`);
+
+          // Initials (e.g. "Md Faizan" -> "MF" ya "AK")
+          const initials = name
+            .split(' ')
+            .map((n: string) => n[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase();
+          setDoctorInitials(initials || 'DR');
+        } catch (e) {
+          console.error('Failed to parse user info', e);
+        }
+      }
+    }
+  }, []);
+
+  // 2. Safe Logout Handler
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
+    router.push('/login');
+  };
 
   const drawerContent = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', bgcolor: '#1E293B', color: '#FFFFFF' }}>
@@ -58,7 +98,11 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         <Typography variant="h6" sx={{ fontWeight: 900, letterSpacing: '-0.5px', color: '#FFFFFF' }}>
           Medi<span style={{ color: '#83C5BE' }}>Pulse</span>
         </Typography>
-        <Chip label="Doctor" size="small" sx={{ bgcolor: 'rgba(0, 109, 119, 0.2)', color: '#83C5BE', fontWeight: 700, fontSize: '0.65rem' }} />
+        <Chip
+          label="Doctor"
+          size="small"
+          sx={{ bgcolor: 'rgba(0, 109, 119, 0.2)', color: '#83C5BE', fontWeight: 700, fontSize: '0.65rem' }}
+        />
       </Box>
 
       <List sx={{ px: 2, py: 3, flexGrow: 1 }}>
@@ -99,8 +143,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
       <Box sx={{ p: 2, borderTop: '1px solid #334155' }}>
         <ListItemButton
-          component={Link}
-          href="/login"
+          onClick={handleLogout}
           sx={{ borderRadius: '12px', color: '#F87171', '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' } }}
         >
           <ListItemIcon sx={{ color: '#F87171', minWidth: 40 }}>
@@ -121,6 +164,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#0F172A' }}>
+      {/* Desktop Sidebar */}
       <Drawer
         variant="permanent"
         sx={{
@@ -138,6 +182,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         {drawerContent}
       </Drawer>
 
+      {/* Mobile Drawer */}
       <Drawer
         variant="temporary"
         open={mobileOpen}
@@ -151,7 +196,9 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
         {drawerContent}
       </Drawer>
 
+      {/* Main Content Area */}
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', width: { md: `calc(100% - ${DRAWER_WIDTH}px)` } }}>
+        {/* Top Navbar */}
         <Box
           sx={{
             height: HEADER_HEIGHT,
@@ -174,7 +221,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
 
           <Stack direction="row" spacing={2.5} sx={{ alignItems: 'center' }}>
             <Typography variant="body2" sx={{ fontWeight: 700, color: '#FFFFFF' }}>
-              Dr. A. K. Roy Workspace
+              {doctorName} Workspace
             </Typography>
 
             <IconButton sx={{ color: '#CBD5E1', border: '1px solid #334155' }}>
@@ -182,7 +229,7 @@ export default function DoctorLayout({ children }: { children: React.ReactNode }
             </IconButton>
 
             <Avatar sx={{ bgcolor: '#006D77', width: 36, height: 36, fontSize: '0.85rem', fontWeight: 700 }}>
-              DR
+              {doctorInitials}
             </Avatar>
           </Stack>
         </Box>

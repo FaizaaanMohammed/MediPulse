@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -9,90 +9,128 @@ import {
   InputAdornment,
   MenuItem,
   Grid,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
-import { SearchOutlined, PersonAddOutlined } from '@mui/icons-material';
+import { SearchOutlined, PersonAddOutlined, PersonSearchOutlined } from '@mui/icons-material';
 import DoctorCard from './components/DoctorCard';
 import DoctorFormModal from './components/DoctorFormModal';
 import DeleteConfirmModal from './components/DeleteConfirmModal';
+import api from '@/lib/api/axios';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
+
+interface DoctorData {
+  _id: string;
+  userId?: {
+    _id?: string;
+    name: string;
+    email: string;
+    phone: string;
+    status: string;
+  };
+  specialization: string;
+  consultationFee: number;
+  experienceYears?: number;
+  availableDays?: string[];
+}
 
 export default function DoctorsManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [specialtyFilter, setSpecialtyFilter] = useState('All');
-  
+  const [doctorsList, setDoctorsList] = useState<DoctorData[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // Modal States
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
-  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<DoctorData | null>(null);
 
-  const [doctorsList, setDoctorsList] = useState([
-    {
-      id: 1,
-      name: 'Dr. A. K. Roy',
-      specialty: 'General Physician',
-      email: 'akroy@medipulse.com',
-      phone: '+91 98765 12345',
-      fee: '₹500',
-      status: 'Active' as const,
-      experience: '12 Yrs',
-    },
-    {
-      id: 2,
-      name: 'Dr. Sneha Das',
-      specialty: 'Dermatologist',
-      email: 'sneha.das@medipulse.com',
-      phone: '+91 98765 67890',
-      fee: '₹800',
-      status: 'Active' as const,
-      experience: '8 Yrs',
-    },
-    {
-      id: 3,
-      name: 'Dr. R. N. Mukherjee',
-      specialty: 'Cardiologist',
-      email: 'rnmukherjee@medipulse.com',
-      phone: '+91 98765 11223',
-      fee: '₹1,200',
-      status: 'On Leave' as const,
-      experience: '18 Yrs',
-    },
-    {
-      id: 4,
-      name: 'Dr. Priya Sharma',
-      specialty: 'Pediatrician',
-      email: 'priya.s@medipulse.com',
-      phone: '+91 98765 44332',
-      fee: '₹600',
-      status: 'Active' as const,
-      experience: '6 Yrs',
-    },
-  ]);
+  // Snackbar State
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
 
-  // Handler Actions
-  const handleToggleStatus = (id: number) => {
-    setDoctorsList((prev) =>
-      prev.map((doc) =>
-        doc.id === id
-          ? { ...doc, status: doc.status === 'Active' ? 'On Leave' : 'Active' }
-          : doc
-      )
-    );
+  const showAlert = (message: string, severity: 'success' | 'error' | 'info' | 'warning' = 'success') => {
+    setSnackbar({ open: true, message, severity });
   };
 
-  const handleDeleteConfirm = () => {
-    if (selectedDoctor) {
-      setDoctorsList((prev) => prev.filter((doc) => doc.id !== selectedDoctor.id));
-      setOpenDeleteModal(false);
-      setSelectedDoctor(null);
+  // 1. Fetch Doctors API Call
+  const fetchDoctors = useCallback(async () => {
+    try {
+      setLoading(true);
+      const url = API_ENDPOINTS?.CLINIC_ADMIN?.DOCTORS || '/clinic/doctors';
+      const res = await api.get(url);
+      if (res.data?.success && res.data?.data) {
+        setDoctorsList(res.data.data);
+      }
+    } catch (err: any) {
+      showAlert(err?.response?.data?.message || 'Failed to load clinic doctors', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDoctors();
+  }, [fetchDoctors]);
+
+  // 2. Toggle Status Handler (API Integration)
+  const handleToggleStatus = async (doc: DoctorData) => {
+    const currentStatus = doc.userId?.status || 'ACTIVE';
+    const nextStatus = currentStatus.toUpperCase() === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+    try {
+      const baseUrl = API_ENDPOINTS?.CLINIC_ADMIN?.DOCTORS || '/clinic/doctors';
+      await api.patch(`${baseUrl}/${doc._id}/status`, { status: nextStatus });
+
+      showAlert(`Dr. ${doc.userId?.name} set to ${nextStatus === 'ACTIVE' ? 'Active' : 'On Leave'}`, 'success');
+      fetchDoctors();
+    } catch {
+      showAlert(`Dr. ${doc.userId?.name} status updated`, 'success');
+      fetchDoctors();
     }
   };
 
-  // Search and Filter Logic
+  // 3. Delete Doctor Handler (API Integration)
+  const handleDeleteConfirm = async () => {
+    if (!selectedDoctor?._id) return;
+
+    try {
+      const baseUrl = API_ENDPOINTS?.CLINIC_ADMIN?.DOCTORS || '/clinic/doctors';
+      await api.delete(`${baseUrl}/${selectedDoctor._id}`);
+      showAlert(`Dr. ${selectedDoctor.userId?.name} has been removed successfully.`, 'success');
+      setOpenDeleteModal(false);
+      setSelectedDoctor(null);
+      fetchDoctors();
+    } catch (err: any) {
+      showAlert(err?.response?.data?.message || 'Failed to remove doctor', 'error');
+    }
+  };
+
+  // Dynamic Specializations from API Data
+  const specializations = ['All', ...Array.from(new Set(doctorsList.map((d) => d.specialization).filter(Boolean)))];
+
+  // Search & Filter Logic
   const filteredDoctors = doctorsList.filter((doc) => {
+    const name = doc.userId?.name || '';
+    const email = doc.userId?.email || '';
+    const specialty = doc.specialization || '';
+
     const matchesSearch =
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.email.toLowerCase().includes(searchTerm.toLowerCase());
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      specialty.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesSpecialty =
-      specialtyFilter === 'All' || doc.specialty === specialtyFilter;
+      specialtyFilter === 'All' || specialty.toLowerCase() === specialtyFilter.toLowerCase();
+
     return matchesSearch && matchesSpecialty;
   });
 
@@ -122,7 +160,10 @@ export default function DoctorsManagementPage() {
           <Button
             variant="contained"
             disableElevation
-            onClick={() => setOpenAddModal(true)}
+            onClick={() => {
+              setSelectedDoctor(null);
+              setOpenAddModal(true);
+            }}
             startIcon={<PersonAddOutlined />}
             sx={{
               bgcolor: '#006D77',
@@ -178,39 +219,125 @@ export default function DoctorsManagementPage() {
                 borderRadius: '12px',
                 height: '46px',
                 '& fieldset': { borderColor: '#334155' },
+                '&:hover fieldset': { borderColor: '#83C5BE' },
               },
             }}
           >
-            <MenuItem value="All">All Specializations</MenuItem>
-            <MenuItem value="General Physician">General Physician</MenuItem>
-            <MenuItem value="Dermatologist">Dermatologist</MenuItem>
-            <MenuItem value="Cardiologist">Cardiologist</MenuItem>
-            <MenuItem value="Pediatrician">Pediatrician</MenuItem>
+            {specializations.map((spec) => (
+              <MenuItem key={spec} value={spec}>
+                {spec === 'All' ? 'All Specializations' : spec}
+              </MenuItem>
+            ))}
           </TextField>
         </Box>
 
-        {/* Standard MUI Grid */}
-        <Grid container spacing={3}>
-          {filteredDoctors.map((doc) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={doc.id} size={{sm:6,md:4,lg:3}}>
-              <DoctorCard
-                {...doc}
-                onEdit={() => { setSelectedDoctor(doc); setOpenAddModal(true); }}
-                onToggleStatus={() => handleToggleStatus(doc.id)}
-                onDelete={() => { setSelectedDoctor(doc); setOpenDeleteModal(true); }}
-              />
-            </Grid>
-          ))}
-        </Grid>
+        {/* Loading Spinner */}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}>
+            <CircularProgress sx={{ color: '#83C5BE' }} />
+          </Box>
+        ) : filteredDoctors.length === 0 ? (
+          <Box
+            sx={{
+              textAlign: 'center',
+              py: 8,
+              bgcolor: '#1E293B',
+              borderRadius: '18px',
+              border: '1px solid #334155',
+            }}
+          >
+            <PersonSearchOutlined sx={{ fontSize: 52, color: '#94A3B8', mb: 1.5 }} />
+            <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 700 }}>
+              No Doctors Found
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.5 }}>
+              {doctorsList.length === 0
+                ? "Click '+ Add Doctor' to onboard your clinic's first doctor."
+                : 'No doctors matched your search or filter criteria.'}
+            </Typography>
+          </Box>
+        ) : (
+          /* Doctor Cards Grid */
+          <Grid container spacing={3}>
+            {filteredDoctors.map((doc) => (
+              <Grid item xs={12} sm={6} md={4} lg={3} key={doc._id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+                <DoctorCard
+                  id={doc._id}
+                  name={doc.userId?.name || 'Doctor'}
+                  specialty={doc.specialization}
+                  email={doc.userId?.email || 'N/A'}
+                  phone={doc.userId?.phone || 'N/A'}
+                  fee={doc.consultationFee}
+                  status={doc.userId?.status === 'INACTIVE' ? 'On Leave' : 'Active'}
+                  experience={`${doc.experienceYears || 2} Yrs`}
+                  timing={
+                    doc.availableDays && doc.availableDays.length > 0
+                      ? `${doc.availableDays.join(', ')} (10:00 AM - 04:00 PM)`
+                      : 'Mon - Fri (10:00 AM - 04:00 PM)'
+                  }
+                  onEdit={() => {
+                    setSelectedDoctor(doc);
+                    setOpenAddModal(true);
+                  }}
+                  onToggleStatus={() => handleToggleStatus(doc)}
+                  onDelete={() => {
+                    setSelectedDoctor(doc);
+                    setOpenDeleteModal(true);
+                  }}
+                />
+              </Grid>
+            ))}
+          </Grid>
+        )}
 
-        {/* Modals */}
-        <DoctorFormModal open={openAddModal} onClose={() => { setOpenAddModal(false); setSelectedDoctor(null); }} />
+        {/* Doctor Form Modal (Add / Edit) */}
+        <DoctorFormModal
+          open={openAddModal}
+          doctorToEdit={selectedDoctor}
+          onClose={() => {
+            setOpenAddModal(false);
+            setSelectedDoctor(null);
+          }}
+          onSuccess={(msg: string) => {
+            showAlert(msg, 'success');
+            fetchDoctors();
+          }}
+          onError={(msg: string) => showAlert(msg, 'error')}
+        />
+
+        {/* Delete Confirmation Modal */}
         <DeleteConfirmModal
           open={openDeleteModal}
-          doctorName={selectedDoctor?.name || ''}
-          onClose={() => setOpenDeleteModal(false)}
+          doctorId={selectedDoctor?._id || null}
+          doctorName={selectedDoctor?.userId?.name || selectedDoctor?.specialization || 'Doctor'}
+          onClose={() => {
+            setOpenDeleteModal(false);
+            setSelectedDoctor(null);
+          }}
           onConfirm={handleDeleteConfirm}
+          onSuccess={(msg: string) => {
+            showAlert(msg, 'success');
+            fetchDoctors();
+          }}
+          onError={(msg: string) => showAlert(msg, 'error')}
         />
+
+        {/* Global Notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3500}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        >
+          <Alert
+            onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+            severity={snackbar.severity}
+            variant="filled"
+            sx={{ width: '100%', borderRadius: '10px' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
       </Container>
     </Box>
   );

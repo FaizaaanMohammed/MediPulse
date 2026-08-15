@@ -1,4 +1,5 @@
 const User = require("../models/UserModels");
+const Clinic = require("../models/ClinicModel")
 const httpStatusCode = require("../utils/httpStatusCode");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -161,12 +162,22 @@ async verifyEmail(req, res) {
         });
       }
 
+      // 🏥 Fetch Clinic if this user is a Clinic Admin or Doctor
+      let clinicId = null;
+      if (user.role === "CLINIC_ADMIN") {
+        const clinic = await Clinic.findOne({ ownerId: user._id });
+        if (clinic) clinicId = clinic._id;
+      }
+
+      // 🔐 JWT Token with User ID + Clinic ID
       const token = jwt.sign(
         {
           id: user._id,
+          userId: user._id,
           name: user.name,
           email: user.email,
           role: user.role,
+          clinicId: clinicId, // 👈 Ab token me Clinic ID pack ho gayi!
         },
         process.env.JWT_SECRET,
         { expiresIn: "1d" }
@@ -181,6 +192,7 @@ async verifyEmail(req, res) {
           email: user.email,
           role: user.role,
           phone: user.phone,
+          clinicId: clinicId, // 👈 Frontend client ko bhi mil jayega
         },
         token: token,
       });

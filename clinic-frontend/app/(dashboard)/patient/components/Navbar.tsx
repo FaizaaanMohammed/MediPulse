@@ -1,13 +1,69 @@
 'use client';
-import React, { useState } from 'react';
-import { Box, Container, Typography, Button, Stack, Avatar, Chip, Paper, Menu, MenuItem, ListItemIcon, Divider } from '@mui/material';
-import { ArrowForwardOutlined, FavoriteOutlined, LogoutOutlined, ReceiptLongOutlined } from '@mui/icons-material';
+import React, { useState, useEffect } from 'react';
+import {
+  Box,
+  Container,
+  Typography,
+  Button,
+  Stack,
+  Avatar,
+  Chip,
+  Paper,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  Divider,
+} from '@mui/material';
+import {
+  ArrowForwardOutlined,
+  FavoriteOutlined,
+  LogoutOutlined,
+  ReceiptLongOutlined,
+} from '@mui/icons-material';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Dynamic Patient Profile State
+  const [patientUser, setPatientUser] = useState<{
+    name: string;
+    tokenId: string;
+    initial: string;
+    isLoggedIn: boolean;
+  }>({
+    name: 'Patient Account',
+    tokenId: 'PAT-OPD',
+    initial: 'P',
+    isLoggedIn: false,
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token');
+
+      if (storedUser && token) {
+        try {
+          const parsed = JSON.parse(storedUser);
+          const name = parsed.name || parsed.patientName || 'Verified Patient';
+          const tokenId = parsed.patientId || parsed.customId || `PAT-${(parsed._id || '1082').slice(-4).toUpperCase()}`;
+          const initial = name.charAt(0).toUpperCase();
+
+          setPatientUser({
+            name,
+            tokenId,
+            initial,
+            isLoggedIn: true,
+          });
+        } catch (e) {
+          console.error('Failed to parse patient user data', e);
+        }
+      }
+    }
+  }, []);
 
   // Profile Menu State
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -23,12 +79,14 @@ export default function Navbar() {
 
   const handleLogout = () => {
     handleCloseMenu();
-    // Tumhara authentication clearing logic / token remove logic yahan aayega
-    alert('Logged out successfully!');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
     router.push('/login');
   };
 
-  // Updated 4 Clean Navigation Items
   const navs = [
     { text: 'Home', href: '/patient/search-doctors' },
     { text: 'Our Doctors', href: '/patient/search-doctors/all' },
@@ -81,7 +139,7 @@ export default function Navbar() {
             />
           </Box>
 
-          {/* 4 Core Navigation Links */}
+          {/* 4 Navigation Links */}
           <Stack direction="row" spacing={3.5} sx={{ display: { xs: 'none', md: 'flex' } }}>
             {navs.map((item) => {
               const isActive = pathname === item.href;
@@ -107,33 +165,42 @@ export default function Navbar() {
 
           {/* User Profile & CTA */}
           <Stack direction="row" spacing={2} alignItems="center">
-            {/* Clickable Profile Trigger */}
-            <Box
-              onClick={handleOpenMenu}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-                cursor: 'pointer',
-                p: 0.5,
-                px: 1,
-                borderRadius: '50px',
-                transition: '0.2s',
-                '&:hover': { bgcolor: '#F1F5F9' },
-              }}
-            >
-              <Avatar sx={{ bgcolor: '#4F46E5', width: 36, height: 36, fontSize: '0.85rem', fontWeight: 800 }}>
-                P
-              </Avatar>
-              <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1E1B4B', lineHeight: 1 }}>
-                  Rahul Sharma
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#64748B' }}>
-                  PAT-1082
-                </Typography>
+            {patientUser.isLoggedIn ? (
+              <Box
+                onClick={handleOpenMenu}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  cursor: 'pointer',
+                  p: 0.5,
+                  px: 1,
+                  borderRadius: '50px',
+                  transition: '0.2s',
+                  '&:hover': { bgcolor: '#F1F5F9' },
+                }}
+              >
+                <Avatar sx={{ bgcolor: '#4F46E5', width: 36, height: 36, fontSize: '0.85rem', fontWeight: 800 }}>
+                  {patientUser.initial}
+                </Avatar>
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1E1B4B', lineHeight: 1 }}>
+                    {patientUser.name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: '#64748B' }}>
+                    {patientUser.tokenId}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
+            ) : (
+              <Button
+                component={Link}
+                href="/login"
+                sx={{ fontWeight: 700, color: '#4F46E5', textTransform: 'none' }}
+              >
+                Sign In
+              </Button>
+            )}
 
             {/* Logout Popover Menu */}
             <Menu
@@ -157,10 +224,10 @@ export default function Navbar() {
             >
               <Box sx={{ px: 2, py: 1 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1E1B4B' }}>
-                  Rahul Sharma
+                  {patientUser.name}
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#64748B' }}>
-                  PAT-1082
+                  {patientUser.tokenId}
                 </Typography>
               </Box>
 
@@ -187,6 +254,7 @@ export default function Navbar() {
               </MenuItem>
             </Menu>
 
+            {/* Book OPD Slot CTA */}
             <Button
               variant="contained"
               disableElevation

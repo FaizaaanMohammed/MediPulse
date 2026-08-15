@@ -26,9 +26,19 @@ const doctorSchema = new mongoose.Schema(
     },
     availableDays: [
       {
-        type: String, // e.g. "Monday", "Wednesday"
+        type: String,
       },
     ],
+    rating: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+    },
+    ratingCount: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
