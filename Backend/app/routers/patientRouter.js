@@ -47,4 +47,14 @@ router.post('/doctors/:id/feedback', AuthCheck, (req, res) => {
   patientController.submitFeedback(req, res);
 });
 
+router.post('/create-razorpay-order', AuthCheck, (req, res) => {
+  // #swagger.tags = ['Patient Portal']
+  patientController.createRazorpayOrder(req, res);
+});
+
+router.post('/verify-payment', AuthCheck, (req, res) => {
+  // #swagger.tags = ['Patient Portal']
+  patientController.verifyPaymentAndBook(req, res);
+});
+
 module.exports = router;

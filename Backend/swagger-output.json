@@ -1120,9 +1120,6 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "patientId": {
-                    "example": "any"
-                  },
                   "rating": {
                     "example": "any"
                   },
@@ -1163,13 +1160,73 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "patientId": {
-                    "example": "any"
-                  },
                   "rating": {
                     "example": "any"
                   },
                   "comment": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient/create-razorpay-order": {
+      "post": {
+        "tags": [
+          "Patient Portal"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "example": "any"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patient/verify-payment": {
+      "post": {
+        "tags": [
+          "Patient Portal"
+        ],
+        "description": "",
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "razorpay_order_id": {
+                    "example": "any"
+                  },
+                  "razorpay_payment_id": {
+                    "example": "any"
+                  },
+                  "razorpay_signature": {
+                    "example": "any"
+                  },
+                  "bookingData": {
                     "example": "any"
                   }
                 }

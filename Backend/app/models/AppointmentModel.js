@@ -38,10 +38,18 @@ const appointmentSchema = new mongoose.Schema(
     notes: {
       type: String,
     },
-    // 🔥 Yahan add hoga WAITING / PENDING enum
+
     status: {
       type: String,
-      enum: ["WAITING", "IN_PROGRESS", "COMPLETED", "CANCELLED", "PENDING", "BOOKED"],
+      enum: [
+        "WAITING",
+        "IN_PROGRESS",
+        "CONFIRMED",
+        "COMPLETED",
+        "CANCELLED",
+        "PENDING",
+        "BOOKED",
+      ],
       default: "WAITING",
     },
     paymentStatus: {
@@ -50,7 +58,7 @@ const appointmentSchema = new mongoose.Schema(
       default: "Pending",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Appointment", appointmentSchema);

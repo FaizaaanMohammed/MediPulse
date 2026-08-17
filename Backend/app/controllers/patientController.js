@@ -3,6 +3,8 @@ const Doctor = require("../models/DoctorModel");
 const Appointment = require("../models/AppointmentModel");
 const Contact = require("../models/ContactModel");
 const httpStatusCode = require("../utils/httpStatusCode");
+const razorpay = require('../config/razorpayConfig'); 
+const crypto = require('crypto');
 
 class PatientController {
   // ==========================================
@@ -137,10 +139,7 @@ class PatientController {
 
   // ==========================================
   // 3. GET MY BOOKINGS / LIVE TOKEN STATUS
-  // ==========================================
-  // ==========================================
-  // GET MY BOOKINGS / LIVE TOKEN STATUS
-  // ==========================================
+  
   async getMyAppointments(req, res) {
     try {
       // 1. Resolve Patient User ID safely from auth middleware or query/headers
@@ -242,10 +241,7 @@ class PatientController {
 
   // ==========================================
   // 4. SUBMIT PATIENT REVIEW & RATING
-  // ==========================================
-  // ==========================================
-  // SUBMIT FEEDBACK (DOCTOR OR APPOINTMENT)
-  // ==========================================
+  
   async submitFeedback(req, res) {
     try {
       const { id } = req.params;
@@ -347,6 +343,96 @@ class PatientController {
       return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  // 6. Create Razorpay Order
+  async createRazorpayOrder(req, res) {
+    try {
+      const { amount } = req.body;
+
+      const options = {
+        amount: Math.round(Number(amount) * 100),
+        currency: 'INR',
+        receipt: `receipt_${Date.now()}`,
+      };
+
+      const order = await razorpay.orders.create(options);
+
+      return res.status(httpStatusCode.OK).json({
+        success: true,
+        order,
+      });
+    } catch (error) {
+      console.error('Razorpay Create Order Error:', error);
+      return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: error.message || 'Failed to initiate order',
+      });
+    }
+  }
+
+  // 7. Verify Razorpay Payment & Confirm Appointment
+  async verifyPaymentAndBook(req, res) {
+    try {
+      const {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature,
+        bookingData,
+      } = req.body;
+
+      const secret = process.env.RAZORPAY_KEY_SECRET || '76lVwR1vsKGotHUGZLUbRwC2';
+      const body = razorpay_order_id + '|' + razorpay_payment_id;
+      const expectedSignature = crypto
+        .createHmac('sha256', secret)
+        .update(body.toString())
+        .digest('hex');
+
+      if (expectedSignature !== razorpay_signature) {
+        return res.status(httpStatusCode.BAD_REQUEST).json({
+          success: false,
+          message: 'Payment verification failed: Invalid Signature',
+        });
+      }
+
+      const patientId = req.user?._id || bookingData.patientId;
+      const count = await Appointment.countDocuments();
+      const appointmentId = `APT-${101 + count}`;
+
+      let resolvedClinicId = bookingData.clinicId;
+      if (!resolvedClinicId && bookingData.doctorId) {
+        const docRecord = await Doctor.findById(bookingData.doctorId);
+        resolvedClinicId = docRecord?.clinicId;
+      }
+
+      const newAppointment = await Appointment.create({
+        appointmentId,
+        patientId,
+        doctorId: bookingData.doctorId,
+        clinicId: resolvedClinicId,
+        appointmentDate: bookingData.appointmentDate ? new Date(bookingData.appointmentDate) : new Date(),
+        timeSlot: bookingData.timeSlot || '10:30 AM',
+        type: bookingData.type || 'General Checkup',
+        status: 'CONFIRMED',
+        paymentStatus: 'PAID',
+        paymentDetails: {
+          orderId: razorpay_order_id,
+          paymentId: razorpay_payment_id,
+        },
+      });
+
+      return res.status(httpStatusCode.CREATED).json({
+        success: true,
+        message: 'Payment verified and appointment confirmed successfully!',
+        data: newAppointment,
+      });
+    } catch (error) {
+      console.error('Verify Payment Error:', error);
+      return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: error.message || 'Internal Server Error during booking verification',
       });
     }
   }
