@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -16,34 +16,94 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { CloseOutlined, LocalHospitalOutlined } from '@mui/icons-material';
+import api from '@/lib/api/axios';
+import { API_ENDPOINTS } from '@/lib/api/endpoints';
 
-interface OnboardClinicModalProps {
-  open: boolean;
-  onClose: () => void;
-  onSave: (data: { name: string; ownerName: string; email: string; city: string; plan: string }) => Promise<void> | void;
-}
-
-export default function OnboardClinicModal({ open, onClose, onSave }: OnboardClinicModalProps) {
+export default function OnboardClinicModal({ open, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [plans, setPlans] = useState([]);
+
   const [formData, setFormData] = useState({
     name: '',
     ownerName: '',
     email: '',
+    phone: '',
     city: '',
-    plan: 'Pro Monthly',
+    address: '',
+    subscriptionPlan: '',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Modal open hone par subscription plans fetch karein
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setPlansLoading(true);
+      try {
+        const res = await api.get(API_ENDPOINTS.SUBSCRIPTIONS.GET_ALL);
+        const fetchedData = res.data?.data || res.data || [];
+        setPlans(fetchedData);
+        if (fetchedData.length > 0) {
+          setFormData((prev) => ({ ...prev, subscriptionPlan: fetchedData[0]._id }));
+        }
+      } catch (err) {
+        console.error('Failed to fetch plans:', err);
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+
+    if (open) {
+      fetchPlans();
+    } else {
+      setFormData({
+        name: '',
+        ownerName: '',
+        email: '',
+        phone: '',
+        city: '',
+        address: '',
+        subscriptionPlan: '',
+      });
+    }
+  }, [open]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await onSave(formData);
-      setFormData({ name: '', ownerName: '', email: '', city: '', plan: 'Pro Monthly' });
+      // Direct LocalStorage se logged-in super admin ki user id get karein
+      const savedUser = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : {};
+      const superAdminOwnerId = savedUser.id || savedUser._id;
+
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        city: formData.city,
+        address: formData.address,
+        ownerId: superAdminOwnerId, // Localstorage wali valid MongoDB ObjectId
+        subscriptionPlan: formData.subscriptionPlan, // Select plan ki valid _id
+      };
+
+      await api.post(API_ENDPOINTS.SUPER_ADMIN.ONBOARD_CLINIC, payload);
+
+      if (onSuccess) onSuccess();
+      onClose();
     } catch (err) {
       console.error('Failed to onboard clinic:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const inputStyles = {
+    '& .MuiOutlinedInput-root': {
+      color: '#FFF',
+      borderRadius: '12px',
+      bgcolor: 'rgba(255, 255, 255, 0.06)',
+      '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+      '&:hover fieldset': { borderColor: '#83C5BE' },
+    },
   };
 
   return (
@@ -81,8 +141,8 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
         <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
 
         <DialogContent sx={{ py: 3, bgcolor: '#1E293B' }}>
-          <Grid container spacing={2.5}>
-            <Grid item xs={12} size={{ xs: 6 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Clinic Name
               </Typography>
@@ -92,19 +152,11 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
                 placeholder="e.g. Apollo Care Specialty"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#FFF',
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.06)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                    '&:hover fieldset': { borderColor: '#83C5BE' },
-                  },
-                }}
+                sx={inputStyles}
               />
             </Grid>
 
-            <Grid item xs={6} size={{ xs: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Clinic Admin / Owner Name
               </Typography>
@@ -114,18 +166,11 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
                 placeholder="Dr. Rajesh Sharma"
                 value={formData.ownerName}
                 onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#FFF',
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.06)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                  },
-                }}
+                sx={inputStyles}
               />
             </Grid>
 
-            <Grid item xs={6} size={{ xs: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Contact Email
               </Typography>
@@ -136,54 +181,65 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
                 placeholder="admin@apollocare.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#FFF',
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.06)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                  },
-                }}
+                sx={inputStyles}
               />
             </Grid>
 
-            <Grid item xs={6} size={{ xs: 6 }}>
+            <Grid item xs={12} sm={6}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
-                Location / City
+                Phone Number
               </Typography>
               <TextField
                 fullWidth
                 required
-                placeholder="Salt Lake, Kolkata"
-                value={formData.city}
-                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#FFF',
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.06)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                  },
-                }}
+                placeholder="+91 9876543210"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                sx={inputStyles}
               />
             </Grid>
 
-            <Grid item xs={6} size={{ xs: 6 }}>
+            <Grid item xs={12} sm={6}>
+              <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
+                City
+              </Typography>
+              <TextField
+                fullWidth
+                required
+                placeholder="Kolkata"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                sx={inputStyles}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
+                Full Address
+              </Typography>
+              <TextField
+                fullWidth
+                required
+                placeholder="Salt Lake Sector V, Kolkata"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                sx={inputStyles}
+              />
+            </Grid>
+
+            <Grid item xs={12}>
               <Typography variant="caption" sx={{ color: '#CBD5E1', fontWeight: 600, display: 'block', mb: 0.8 }}>
                 Assigned SaaS Tier
               </Typography>
               <TextField
                 select
                 fullWidth
-                value={formData.plan}
-                onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
+                required
+                disabled={plansLoading}
+                value={formData.subscriptionPlan}
+                onChange={(e) => setFormData({ ...formData, subscriptionPlan: e.target.value })}
                 sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#FFF',
-                    borderRadius: '12px',
-                    bgcolor: 'rgba(255, 255, 255, 0.06)',
-                    '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
-                  },
+                  ...inputStyles,
                   '& .MuiSvgIcon-root': { color: '#83C5BE' },
                 }}
                 SelectProps={{
@@ -194,9 +250,17 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
                   },
                 }}
               >
-                <MenuItem value="Starter Trial">Starter Trial (14 Days)</MenuItem>
-                <MenuItem value="Pro Monthly">Pro Monthly Tier</MenuItem>
-                <MenuItem value="Enterprise SaaS">Enterprise SaaS Plan</MenuItem>
+                {plans.length === 0 ? (
+                  <MenuItem value="" disabled>
+                    {plansLoading ? 'Loading plans...' : 'No plans available'}
+                  </MenuItem>
+                ) : (
+                  plans.map((plan) => (
+                    <MenuItem key={plan._id} value={plan._id}>
+                      {plan.name} {plan.price > 0 ? `(₹${plan.price})` : '(Free Trial)'}
+                    </MenuItem>
+                  ))
+                )}
               </TextField>
             </Grid>
           </Grid>
@@ -210,7 +274,7 @@ export default function OnboardClinicModal({ open, onClose, onSave }: OnboardCli
           </Button>
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || plansLoading}
             variant="contained"
             disableElevation
             sx={{
